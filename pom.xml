@@ -11,6 +11,7 @@
     <modules>
         <module>Z3-api</module>
         <module>Verifier</module>
+        <module>Grammar</module>
     </modules>
 
     <build>
