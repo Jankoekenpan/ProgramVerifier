@@ -6,6 +6,8 @@
 **/target/*
 
 #Eclipse
+*/.settings/*
 .settings/*
 .project
 .classpath
+
