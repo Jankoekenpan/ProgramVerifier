@@ -4,36 +4,26 @@ grammar Language;
 program     : statement*
             ;
 
-statement   : declaration_stat ';'  #declarationStat
-            | assign_stat ';'       #assignStat
-            | if_stat               #ifStat
-            | while_stat            #whileStat
-            | block_stat            #blockStat
-            | return_stat ';'       #returnStat
-            | function_definition   #functionDefStat
-            | contract_stat         #contractStat
+statement   : type ID ';'                                                   #declarationStat
+            | type? ID ':=' expression ';'                                  #assignStat
+            | 'if' '(' expression ')' statement ('else' statement)?         #ifStat
+            | 'while' '(' expression ')' statement                          #whileStat
+            | 'return' expression ';'                                       #returnStat
+            | return_type ID '(' (type ID)? (',' type ID)* ')' statement    #functionDefStat
+            | '{' statement* '}'                                            #blockStat
+            | contract_stat                                                 #contractStat
             ;
 
-block_stat          : '{' statement* '}'
+contract_stat       : '#' ('requires' | 'ensures' | 'loopinvariant') expression
                     ;
 
-declaration_stat    : type ID
-                    ;
+type        : 'int'         #intType
+            | 'boolean'     #booleanType
+            ;
 
-assign_stat         : type? ID ':=' expression
-                    ;
-
-if_stat             : 'if' '(' expression ')' statement ('else' statement)?
-                    ;
-
-while_stat          : 'while' '(' expression ')' block_stat
-                    ;
-
-return_stat         : 'return' expression
-                    ;
-
-contract_stat       : 'CONTRACTS_ARE_NOT_IMPLEMENTED_YET'
-                    ;
+return_type : 'void'    #voidReturnType
+            | type      #normalReturnType
+            ;
 
 expression  : '(' expression ')'                                #parExpr
             | NUM                                               #numExpr
@@ -45,22 +35,8 @@ expression  : '(' expression ')'                                #parExpr
             | expression ('+' | '-') expression                 #plusOrMinusExpr
             | expression ('<' | '>' | '<=' | '>=') expression   #compareExpr
             | expression ('==' | '!=') expression               #equalOrNotEqualExpr
-            | function_call                                     #functionCallExpr
+            |  ID '(' expression? (',' expression)* ')'         #functionCallExpr
             ;
-
-type        : 'int'         #intType
-            | 'boolean'     #booleanType
-            ;
-
-return_type : 'void'    #voidReturnType
-            | type      #normalReturnType
-            ;
-
-function_definition : return_type ID '(' (type ID)? (',' type ID)* ')' block_stat
-                    ;
-
-function_call       : ID '(' expression? (',' expression)* ')'
-                    ;
 
 BOOL    : 'true'
         | 'false'
