@@ -9,6 +9,7 @@ statement   : assign_stat ';'       #assignStat
             | while_stat            #whileStat
             | block_stat            #blockStat
             | return_stat ';'       #returnStat
+            | contract_stat         #contractStat
             ;
 
 block_stat  : '{' statement* '}'
@@ -25,6 +26,9 @@ while_stat  : 'while' '(' expression ')' block_stat
 
 return_stat : 'return' expression
             ;
+
+contract_stat   : 'CONTRACTS_ARE_NOTE_IMPLEMENTED_YET'
+                ;
 
 expression  : '(' expression ')'                                #parExpr
             | NUM                                               #numExpr
@@ -57,6 +61,8 @@ BOOL    : 'true'
         | 'false'
         ;
 
-ID      : [a-z]+ ;             // match lower-case identifiers
-NUM     : [0-9]+ ;             // match lower-case identifiers
-WS      : [ \t\r\n]+ -> skip ; // skip spaces, tabs, newlines
+ID      : [a-z]+ ;                              // match lower-case identifiers
+NUM     : [0-9]+ ;                              // match lower-case identifiers
+WS      : [ \t\r\n]+ -> skip ;                  // skip spaces, tabs, newlines
+COMMENT : '//' .*? ('\n' | EOF)    -> skip;     // skip single line comment
+
