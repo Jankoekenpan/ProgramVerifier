@@ -11,11 +11,13 @@ statement   : type ID ';'                                                   #dec
             | 'return' expression ';'                                       #returnStat
             | return_type ID '(' (type ID)? (',' type ID)* ')' statement    #functionDefStat
             | '{' statement* '}'                                            #blockStat
-            | contract_stat                                                 #contractStat
+            | '#' contract                                                  #contractStat
             ;
 
-contract_stat       : '#' ('requires' | 'ensures' | 'loopinvariant') expression
-                    ;
+contract    : 'requires' expression
+            | 'ensures' expression
+            | 'loopinvariant' expression
+            ;
 
 type        : 'int'         #intType
             | 'boolean'     #booleanType
