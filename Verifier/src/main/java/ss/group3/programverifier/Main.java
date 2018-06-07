@@ -4,6 +4,10 @@ import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
 import com.microsoft.z3.Status;
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.TokenStream;
 
 public class Main {
 
@@ -27,6 +31,13 @@ public class Main {
         //solver.getModel(), solver.push(), solver.pop(), solver.reset()
         //to read smt files: solver.fromFile(String fileName)
         //to read smt strings: solver.fromString(smtProgram)s
+
+        CharStream charStream = new ANTLRInputStream("wahed");
+        LanguageLexer lexer = new LanguageLexer(charStream);
+        TokenStream tokenStream = new CommonTokenStream(lexer);
+        LanguageParser parser = new LanguageParser(tokenStream);
+
+        LanguageParser.ProgramContext programContext = parser.program();
     }
 
 }
