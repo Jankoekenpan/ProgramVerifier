@@ -1,7 +1,7 @@
 package ss.group3.programverification;
 
 import org.antlr.v4.runtime.*;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import ss.group3.programverifier.LanguageLexer;
 import ss.group3.programverifier.LanguageParser;
 
