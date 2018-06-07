@@ -66,11 +66,14 @@
 		        <artifactId>antlr4-maven-plugin</artifactId>
 		        <version>4.7.1</version>
 		        <executions>
-		          <execution>
-		            <id>antlr</id>
-		            <goals>
-		              <goal>antlr4</goal>
-		            </goals>
+		            <execution>
+		                <id>antlr</id>
+		                <goals>
+		                    <goal>antlr4</goal>
+		                </goals>
+                        <configuration>
+                          <visitor>true</visitor>
+                        </configuration>
 		          </execution>
 		        </executions>
 		      </plugin>
