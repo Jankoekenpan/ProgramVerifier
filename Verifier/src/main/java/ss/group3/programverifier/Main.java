@@ -12,8 +12,6 @@ import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.TokenStream;
 
-import ss.group3.programverifier.LanguageParser.StatementContext;
-
 public class Main {
 
     public static void main(String[] args) throws IOException {
@@ -43,7 +41,7 @@ public class Main {
 		LanguageParser parser = new LanguageParser(stream);
 
 		//parse tree
-		StatementContext statement = parser.statement();
+		LanguageParser.ProgramContext programTree = parser.program();
     }
 
 }
