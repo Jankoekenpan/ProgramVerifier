@@ -18,6 +18,7 @@
             <groupId>org.antlr</groupId>
             <artifactId>antlr4-maven-plugin</artifactId>
             <version>4.7.1</version>
+            <type>maven-plugin</type>
         </dependency>
     </dependencies>
 
