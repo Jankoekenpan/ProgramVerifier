@@ -1,5 +1,11 @@
 package ss.group3.programverifier;
 
+import java.io.IOException;
+
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CharStream;
+
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Solver;
@@ -9,9 +15,11 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.TokenStream;
 
+import ss.group3.programverifier.LanguageParser.StatementContext;
+
 public class Main {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         Context context = new Context();
 
         //create the solver instance
@@ -32,12 +40,13 @@ public class Main {
         //to read smt files: solver.fromFile(String fileName)
         //to read smt strings: solver.fromString(smtProgram)s
 
-        CharStream charStream = new ANTLRInputStream("wahed");
-        LanguageLexer lexer = new LanguageLexer(charStream);
-        TokenStream tokenStream = new CommonTokenStream(lexer);
-        LanguageParser parser = new LanguageParser(tokenStream);
+        CharStream input = new ANTLRInputStream(System.in); //ANTLRInputStream("hello");
+		LanguageLexer lexer = new LanguageLexer(input);
+		CommonTokenStream stream = new CommonTokenStream(lexer);
+		LanguageParser parser = new LanguageParser(stream);
 
-        LanguageParser.ProgramContext programContext = parser.program();
+		//parse tree
+		StatementContext statement = parser.statement();
     }
 
 }
