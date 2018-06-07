@@ -32,7 +32,7 @@ while_stat          : 'while' '(' expression ')' block_stat
 return_stat         : 'return' expression
                     ;
 
-contract_stat       : 'CONTRACTS_ARE_NOTE_IMPLEMENTED_YET'
+contract_stat       : 'CONTRACTS_ARE_NOT_IMPLEMENTED_YET'
                     ;
 
 expression  : '(' expression ')'                                #parExpr
