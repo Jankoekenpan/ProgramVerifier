@@ -4,31 +4,36 @@ grammar Language;
 program     : statement*
             ;
 
-statement   : assign_stat ';'       #assignStat
+statement   : declaration_stat ';'  #declarationStat
+            | assign_stat ';'       #assignStat
             | if_stat               #ifStat
             | while_stat            #whileStat
             | block_stat            #blockStat
             | return_stat ';'       #returnStat
+            | function_definition   #functionDefStat
             | contract_stat         #contractStat
             ;
 
-block_stat  : '{' statement* '}'
-            ;
+block_stat          : '{' statement* '}'
+                    ;
 
-assign_stat : type? ID ':=' expression
-            ;
+declaration_stat    : type ID
+                    ;
 
-if_stat     : 'if' '(' expression ')' statement ('else' statement)?
-            ;
+assign_stat         : type? ID ':=' expression
+                    ;
 
-while_stat  : 'while' '(' expression ')' block_stat
-            ;
+if_stat             : 'if' '(' expression ')' statement ('else' statement)?
+                    ;
 
-return_stat : 'return' expression
-            ;
+while_stat          : 'while' '(' expression ')' block_stat
+                    ;
 
-contract_stat   : 'CONTRACTS_ARE_NOTE_IMPLEMENTED_YET'
-                ;
+return_stat         : 'return' expression
+                    ;
+
+contract_stat       : 'CONTRACTS_ARE_NOTE_IMPLEMENTED_YET'
+                    ;
 
 expression  : '(' expression ')'                                #parExpr
             | NUM                                               #numExpr
