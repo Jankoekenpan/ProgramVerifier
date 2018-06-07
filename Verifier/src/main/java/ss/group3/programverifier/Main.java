@@ -1,18 +1,15 @@
 package ss.group3.programverifier;
 
+import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
+import com.microsoft.z3.Solver;
+import com.microsoft.z3.Status;
+
 import java.io.IOException;
 
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CharStream;
-
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Solver;
-import com.microsoft.z3.Status;
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.TokenStream;
 
 import ss.group3.programverifier.LanguageParser.StatementContext;
@@ -42,7 +39,7 @@ public class Main {
 
         CharStream input = new ANTLRInputStream(System.in); //ANTLRInputStream("hello");
 		LanguageLexer lexer = new LanguageLexer(input);
-		CommonTokenStream stream = new CommonTokenStream(lexer);
+		TokenStream stream = new CommonTokenStream(lexer);
 		LanguageParser parser = new LanguageParser(stream);
 
 		//parse tree
