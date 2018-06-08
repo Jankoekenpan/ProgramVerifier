@@ -11,8 +11,6 @@ import java.io.IOException;
 
 public class ParseTest {
 
-    //TODO fix
-
     @Test
     public void testMax() throws IOException {
         CharStream input = new ANTLRFileStream("src/main/resources/max.hello");
@@ -37,6 +35,10 @@ public class ParseTest {
 
         LanguageParser.ProgramContext programContext = parser.program();
         assert programContext != null;
+
+        ToAstCompiler toAstCompiler = new ToAstCompiler();
+        Program program = (Program) toAstCompiler.visit(programContext);
+        assert program != null;
     }
 
     @Test
@@ -48,6 +50,10 @@ public class ParseTest {
 
         LanguageParser.ProgramContext programContext = parser.program();
         assert programContext != null;
+
+        ToAstCompiler toAstCompiler = new ToAstCompiler();
+        Program program = (Program) toAstCompiler.visit(programContext);
+        assert program != null;
     }
 
 }
