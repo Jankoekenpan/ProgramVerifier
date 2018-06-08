@@ -1,3 +1,5 @@
+# ensures (x > y) => (\result == x)
+# ensures (y <= x) => (\result == y)
 int max(int x, int y) {
     int result;
     if (x > y) {
