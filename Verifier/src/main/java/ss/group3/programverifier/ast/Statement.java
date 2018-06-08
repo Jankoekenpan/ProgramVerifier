@@ -2,6 +2,7 @@ package ss.group3.programverifier.ast;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 public class Statement extends AstNode {
@@ -10,6 +11,24 @@ public class Statement extends AstNode {
     private Set<Contract> unmodifiableView;
 
     public Statement() {
+    }
+
+    public void addContracts(Iterator<? extends Contract> contractIterator) {
+        while (contractIterator.hasNext()) {
+            addContract(contractIterator.next());
+        }
+    }
+
+    public void addContracts(Iterable<? extends Contract> contracts) {
+        for (Contract contract : contracts) {
+            addContract(contract);
+        }
+    }
+
+    public void addContracts(Contract... contracts) {
+        for (Contract contract : contracts) {
+            addContract(contract);
+        }
     }
 
     public void addContract(Contract contract) {
