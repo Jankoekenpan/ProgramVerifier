@@ -7,7 +7,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-public class FunctionDef extends Statement {
+public class FunctionDef extends ContractableStatement {
 
     private final String identifier;
     private final Type returnType;
@@ -58,6 +58,21 @@ public class FunctionDef extends Statement {
             pairs.add(new Pair<>(typeIterator.next(), identifierIterator.next()));
         }
         this.parameterPairs = Collections.unmodifiableList(pairs);
+    }
+
+    public FunctionDef(String identifier, Type returnType, Statement body, Iterable<Contract> contracts) {
+        this(identifier, returnType, body);
+        addContracts(contracts);
+    }
+
+    public FunctionDef(String identifier, Type returnType, Statement body, List<Pair<Type, String>> parameterPairs, Iterable<Contract> contracts) {
+        this(identifier, returnType, body, parameterPairs);
+        addContracts(contracts);
+    }
+
+    public FunctionDef(String identifier, Type returnType, Statement body, List<Type> parameterTypes, List<String> parameterIdentifiers, Iterable<Contract> contracts) {
+        this(identifier, returnType, body, parameterTypes, parameterIdentifiers);
+        addContracts(contracts);
     }
 
     public String getIdentifier() {

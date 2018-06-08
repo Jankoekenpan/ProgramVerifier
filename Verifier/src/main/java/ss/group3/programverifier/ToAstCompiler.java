@@ -50,7 +50,12 @@ public class ToAstCompiler extends LanguageBaseVisitor<AstNode> {
     public While visitWhileStat(LanguageParser.WhileStatContext context) {
         BooleanExpression expression = (BooleanExpression) visit(context.expression());
         Statement statement = (Statement) visit(context.statement());
-        return new While(expression, statement);
+        List<Contract> contracts = context.contract().stream()
+                .map(this::visit)
+                .map(Contract.class::cast)
+                .collect(Collectors.toList());
+
+        return new While(expression, statement, contracts);
     }
 
     @Override
@@ -70,7 +75,11 @@ public class ToAstCompiler extends LanguageBaseVisitor<AstNode> {
                 .map(Type::getByName)
                 .collect(Collectors.toList());
         Statement body = (Statement) visit(context.statement());
-        return new FunctionDef(identifier, returnType, body, parameterTypes, parameterIds);
+        List<Contract> contracts = context.contract().stream()
+                .map(this::visit)
+                .map(Contract.class::cast)
+                .collect(Collectors.toList());
+        return new FunctionDef(identifier, returnType, body, parameterTypes, parameterIds, contracts);
     }
 
     @Override
@@ -82,7 +91,7 @@ public class ToAstCompiler extends LanguageBaseVisitor<AstNode> {
     }
 
     @Override
-    public Contract visitContractStat(LanguageParser.ContractStatContext context) {
+    public Contract visitContract(LanguageParser.ContractContext context) {
         ContractKind type = ContractKind.getByName(context.contract_type().getText());
         BooleanExpression expression = (BooleanExpression) visit(context.expression());
         return new Contract(type, expression);
