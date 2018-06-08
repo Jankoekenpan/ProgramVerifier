@@ -1,14 +1,14 @@
 package ss.group3.programverifier.ast;
 
-public class Not extends BooleanExpression {
+public class Not extends Expression {
 
-    private final BooleanExpression negatedExpression;
+    private final Expression negatedExpression;
 
-    public Not(BooleanExpression negatedExpression) {
+    public Not(Expression negatedExpression) {
         this.negatedExpression = negatedExpression;
     }
 
-    public BooleanExpression getNegatedExpression() {
+    public Expression getNegatedExpression() {
         return negatedExpression;
     }
 }

@@ -1,20 +1,19 @@
 package ss.group3.programverifier.ast;
 
-public class NotEquals<TExpr extends Expression> extends BooleanExpression {
+public class NotEquals extends Expression {
 
-    private final TExpr first;
-    private final TExpr second;
+    private final Expression first, second;
 
-    public NotEquals(TExpr first, TExpr second) {
+    public NotEquals(Expression first, Expression second) {
         this.first = first;
         this.second = second;
     }
 
-    public TExpr getFirst() {
+    public Expression getFirst() {
         return first;
     }
 
-    public TExpr getSecond() {
+    public Expression getSecond() {
         return second;
     }
 }

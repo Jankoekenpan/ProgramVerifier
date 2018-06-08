@@ -27,6 +27,11 @@ public enum Type {
     }
 
     public static Type getByName(String name) {
-        return byName.get(name);
+        Type type = byName.get(name);
+        if (type == null) {
+            throw new IllegalArgumentException(name + " is not a type.");
+        } else {
+            return type;
+        }
     }
 }

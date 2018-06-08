@@ -1,14 +1,14 @@
 package ss.group3.programverifier.ast;
 
-public class UnaryMinus extends IntExpression {
+public class UnaryMinus extends Expression {
 
-    private IntExpression expression;
+    private Expression expression;
 
-    public UnaryMinus(IntExpression expression) {
+    public UnaryMinus(Expression expression) {
         this.expression = expression;
     }
 
-    public IntExpression getExpression() {
+    public Expression getExpression() {
         return expression;
     }
 }

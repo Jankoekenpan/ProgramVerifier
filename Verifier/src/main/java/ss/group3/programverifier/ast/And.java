@@ -1,10 +1,9 @@
 package ss.group3.programverifier.ast;
 
-public class Implies extends Expression {
-
+public class And extends Expression {
     private final Expression first, second;
 
-    public Implies(Expression first, Expression second) {
+    public And(Expression first, Expression second) {
         this.first = first;
         this.second = second;
     }

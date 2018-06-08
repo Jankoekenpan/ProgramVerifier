@@ -1,20 +1,19 @@
 package ss.group3.programverifier.ast;
 
-public class GreaterThanOrEqual extends BooleanExpression {
+public class GreaterThanOrEqual extends Expression {
 
-    private final IntExpression first;
-    private final IntExpression second;
+    private final Expression first, second;
 
-    public GreaterThanOrEqual(IntExpression first, IntExpression second) {
+    public GreaterThanOrEqual(Expression first, Expression second) {
         this.first = first;
         this.second = second;
     }
 
-    public IntExpression getFirst() {
+    public Expression getFirst() {
         return first;
     }
 
-    public IntExpression getSecond() {
+    public Expression getSecond() {
         return second;
     }
 }

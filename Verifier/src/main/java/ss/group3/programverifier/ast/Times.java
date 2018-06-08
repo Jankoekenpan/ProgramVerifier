@@ -1,20 +1,19 @@
 package ss.group3.programverifier.ast;
 
-public class Times extends IntExpression {
+public class Times extends Expression {
 
-    private final IntExpression first;
-    private final IntExpression second;
+    private final Expression first, second;
 
-    public Times(IntExpression first, IntExpression second) {
+    public Times(Expression first, Expression second) {
         this.first = first;
         this.second = second;
     }
 
-    public IntExpression getFirst() {
+    public Expression getFirst() {
         return first;
     }
 
-    public IntExpression getSecond() {
+    public Expression getSecond() {
         return second;
     }
 }

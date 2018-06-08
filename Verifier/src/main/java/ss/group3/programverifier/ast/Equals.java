@@ -1,20 +1,19 @@
 package ss.group3.programverifier.ast;
 
-public class Equals<TExpr extends Expression> extends BooleanExpression {
+public class Equals extends Expression {
 
-    private final TExpr first;
-    private final TExpr second;
+    private final Expression first, second;
 
-    public Equals(TExpr first, TExpr second) {
+    public Equals(Expression first, Expression second) {
         this.first = first;
         this.second = second;
     }
 
-    public TExpr getFirst() {
+    public Expression getFirst() {
         return first;
     }
 
-    public TExpr getSecond() {
+    public Expression getSecond() {
         return second;
     }
 }

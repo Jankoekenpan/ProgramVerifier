@@ -1,22 +1,26 @@
 package ss.group3.programverifier.ast;
 
-public class TernaryIf<TExpr extends Expression> extends Expression {
+public class TernaryIf extends Expression {
 
-    private final BooleanExpression condition;
-    private final TExpr thanExpression, elseExpression;
+    private final Expression condition;
+    private final Expression thanExpression, elseExpression;
 
-    public TernaryIf(BooleanExpression condition, TExpr thanExpression, TExpr elseExpression) {
+    public TernaryIf(Expression condition, Expression thanExpression, Expression elseExpression) {
         this.condition = condition;
         this.thanExpression = thanExpression;
         this.elseExpression = elseExpression;
     }
 
-    public TExpr getThanExpression() {
+    public Expression getThanExpression() {
         return thanExpression;
     }
 
-    public TExpr getElseExpression() {
+    public Expression getElseExpression() {
         return elseExpression;
+    }
+
+    public Expression getCondition() {
+        return condition;
     }
 
 }

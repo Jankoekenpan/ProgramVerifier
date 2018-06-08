@@ -2,7 +2,7 @@ package ss.group3.programverifier.ast;
 
 import java.math.BigInteger;
 
-public class Number extends IntExpression {
+public class Number extends Expression {
 
     private BigInteger value;
 

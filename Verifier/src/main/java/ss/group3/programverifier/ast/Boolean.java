@@ -1,6 +1,6 @@
 package ss.group3.programverifier.ast;
 
-public class Boolean extends BooleanExpression {
+public class Boolean extends Expression {
 
     private final boolean value;
 

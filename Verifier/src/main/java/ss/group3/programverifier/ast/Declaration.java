@@ -4,10 +4,16 @@ public class Declaration extends Statement {
 
     private final Type type;
     private final String identifier;
+    private final Expression expression;
 
     public Declaration(Type type, String identifier) {
+        this(type, identifier, null);
+    }
+
+    public Declaration(Type type, String identifier, Expression expression) {
         this.type = type;
         this.identifier = identifier;
+        this.expression = expression;
     }
 
     public Type getType() {
@@ -16,5 +22,13 @@ public class Declaration extends Statement {
 
     public String getIdentifier() {
         return identifier;
+    }
+
+    public Expression getExpression() {
+        return expression;
+    }
+
+    public boolean hasExpression() {
+        return expression != null;
     }
 }

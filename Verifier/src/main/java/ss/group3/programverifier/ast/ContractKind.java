@@ -27,6 +27,11 @@ public enum ContractKind {
     }
 
     public static ContractKind getByName(String name) {
-        return byName.get(name);
+        ContractKind kind = byName.get(name);
+        if (kind == null) {
+            throw new IllegalArgumentException(name + " is not a contract kind.");
+        } else {
+            return kind;
+        }
     }
 }

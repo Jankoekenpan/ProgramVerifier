@@ -4,8 +4,8 @@ grammar Language;
 program     : statement*
             ;
 
-statement   : type ID ';'                                                               #declarationStat
-            | type? ID ':=' expression ';'                                              #assignStat
+statement   : type ID (':=' expression)? ';'                                            #declarationStat
+            | ID ':=' expression ';'                                                    #assignStat
             | 'if' '(' expression ')' statement ('else' statement)?                     #ifStat
             | contract* 'while' '(' expression ')' statement                            #whileStat
             | 'return' expression ';'                                                   #returnStat
@@ -39,14 +39,14 @@ expression  : '(' expression ')'                                        #parExpr
             | expression ('+' | '-') expression                         #plusOrMinusExpr
             | expression ('<' | '>' | '<=' | '>=') expression           #compareExpr
             | expression ('==' | '!=') expression                       #equalOrNotEqualExpr
-            | expression '=>' expression                                #impliesExpr
+            | expression ('&&' | '||' | '=>') expression                #logicBinOpExpr
             | <assoc=right> expression '?' expression ':' expression    #ternaryIfExpr
             | ID '(' expression? (',' expression)* ')'                  #functionCallExpr
-            | '\\' contract_expression                                  #contractExpr    //can only occur in contracts (a compiler/typechecker would check this)
+            | contract_expression                                       #contractExpr    //can only occur in contracts (a compiler/typechecker would check this)
             ;
 
-contract_expression : 'result'                      #resultContrExpr        //denotes the result of a function
-                    | 'old' '(' ID ')'              #oldContrExpr           //in an ensures clause, the result of this expression is the initial value (old value) of the expression instead of the new value.
+contract_expression : '\\result'                     #resultContrExpr        //denotes the result of a function
+                    | '\\old' '(' ID ')'             #oldContrExpr           //in an ensures clause, the result of this expression is the initial value (old value) of the expression instead of the new value.
                     ;
 
 BOOL    : 'true'
@@ -58,4 +58,3 @@ NUM                     : [0-9]+ ;                              // match lower-c
 WS                      : [ \t\r\n]+                -> skip;    // skip spaces, tabs, newlines
 SINGLE_LINE_COMMENT     : '//' .*? ('\n' | EOF)     -> skip;    // skip single line comment
 MULTI_LINE_COMMENT      : '/*' .*? '*/'             -> skip;    // skip multi line comment
-
