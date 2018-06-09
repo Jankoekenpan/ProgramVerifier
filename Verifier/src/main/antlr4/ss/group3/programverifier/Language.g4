@@ -8,7 +8,7 @@ statement   : type ID (':=' expression)? ';'                                    
             | ID ':=' expression ';'                                                    #assignStat
             | 'if' '(' expression ')' statement ('else' statement)?                     #ifStat
             | contract* 'while' '(' expression ')' statement                            #whileStat
-            | 'return' expression ';'                                                   #returnStat
+            | 'return' expression? ';'                                                   #returnStat
             | contract* return_type ID '(' (type ID)? (',' type ID)* ')' statement      #functionDefStat
             | '{' statement* '}'                                                        #blockStat
             ;

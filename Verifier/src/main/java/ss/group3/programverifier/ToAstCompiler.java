@@ -60,7 +60,10 @@ public class ToAstCompiler extends LanguageBaseVisitor<AstNode> {
 
     @Override
     public Return visitReturnStat(LanguageParser.ReturnStatContext context) {
-        return new Return((Expression) visit(context.expression()));
+        LanguageParser.ExpressionContext expressionContext = context.expression();
+        return expressionContext == null
+                ? new Return()
+                : new Return((Expression) visit(context.expression()));
     }
 
     @Override
