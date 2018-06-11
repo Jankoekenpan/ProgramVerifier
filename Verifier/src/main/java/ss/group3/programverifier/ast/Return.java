@@ -19,4 +19,9 @@ public class Return extends Statement {
     public boolean hasExpression() {
         return expression != null;
     }
+
+    @Override
+    public String toString() {
+        return "RETURN{expression=" + expression + "}";
+    }
 }

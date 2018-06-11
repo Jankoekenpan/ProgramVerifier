@@ -11,4 +11,9 @@ public class UnaryMinus extends Expression {
     public Expression getExpression() {
         return expression;
     }
+
+    @Override
+    public String toString() {
+        return "UNARY_MINUS{expression=" + expression + "}";
+    }
 }

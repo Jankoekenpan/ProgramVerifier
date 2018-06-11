@@ -23,4 +23,9 @@ public class TernaryIf extends Expression {
         return condition;
     }
 
+    @Override
+    public String toString() {
+        return "TERNARY_IF{condition=" + condition + ",thanExpression=" + thanExpression + ",elseExpression=" + elseExpression + "}";
+    }
+
 }

@@ -98,4 +98,9 @@ public class FunctionDef extends ContractableStatement {
     public Statement getBody() {
         return body;
     }
+
+    @Override
+    public String toString() {
+        return "FUNCTION_DEF{identifier="+identifier+",returnType="+returnType+",parameters="+parameterPairs+",body="+body+"}";
+    }
 }

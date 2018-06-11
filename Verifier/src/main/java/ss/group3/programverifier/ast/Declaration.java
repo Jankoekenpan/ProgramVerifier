@@ -31,4 +31,9 @@ public class Declaration extends Statement {
     public boolean hasExpression() {
         return expression != null;
     }
+
+    @Override
+    public String toString() {
+        return "DECLARATION{type="+type+",identifier="+identifier+",expression="+expression+"}";
+    }
 }

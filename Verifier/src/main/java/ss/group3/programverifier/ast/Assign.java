@@ -18,4 +18,8 @@ public class Assign extends Statement {
         return expression;
     }
 
+    @Override
+    public String toString() {
+        return "ASSIGN{identifier=" + identifier + ",expression=" + expression + "}";
+    }
 }

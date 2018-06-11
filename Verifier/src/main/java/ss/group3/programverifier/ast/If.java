@@ -30,4 +30,9 @@ public class If extends Statement {
     public Statement getElseBranch() {
         return elseBranch;
     }
+    @Override
+    public String toString() {
+        return "IF{condition=" + condition + ",thanBranch=" + thanBranch + ",elseBranch="+elseBranch+"}";
+    }
+
 }

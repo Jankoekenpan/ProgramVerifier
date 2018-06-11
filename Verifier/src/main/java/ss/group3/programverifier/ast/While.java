@@ -24,4 +24,9 @@ public class While extends ContractableStatement {
         return body;
     }
 
+    @Override
+    public String toString() {
+        return "WHILE{condition=" + condition + ",body=" + body + "}";
+    }
+
 }

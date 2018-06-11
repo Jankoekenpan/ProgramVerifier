@@ -16,4 +16,9 @@ public class NotEquals extends Expression {
     public Expression getSecond() {
         return second;
     }
+
+    @Override
+    public String toString() {
+        return "NOT_EQUALS{first=" + first + ",second=" + second + "}";
+    }
 }

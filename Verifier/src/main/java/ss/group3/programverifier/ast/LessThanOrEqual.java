@@ -16,4 +16,9 @@ public class LessThanOrEqual extends Expression {
     public Expression getSecond() {
         return second;
     }
+
+    @Override
+    public String toString() {
+        return "LESS_THAN_OR_EQUAL{first=" + first + ",second=" + second + "}";
+    }
 }

@@ -16,4 +16,9 @@ public class Times extends Expression {
     public Expression getSecond() {
         return second;
     }
+
+    @Override
+    public String toString() {
+        return "TIMES{first=" + first + ",second=" + second + "}";
+    }
 }

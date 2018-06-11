@@ -16,4 +16,9 @@ public class Equals extends Expression {
     public Expression getSecond() {
         return second;
     }
+
+    @Override
+    public String toString() {
+        return "EQUALS{first=" + first + ",second=" + second + "}";
+    }
 }

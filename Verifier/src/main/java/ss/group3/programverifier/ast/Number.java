@@ -13,4 +13,9 @@ public class Number extends Expression {
     public BigInteger getValue() {
         return value;
     }
+
+    @Override
+    public String toString() {
+        return "NUMBER{value=" + value + "}";
+    }
 }

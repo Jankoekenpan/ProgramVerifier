@@ -16,4 +16,9 @@ public class LessThan extends Expression {
     public Expression getSecond() {
         return second;
     }
+
+    @Override
+    public String toString() {
+        return "LESS_THAN{first=" + first + ",second=" + second + "}";
+    }
 }

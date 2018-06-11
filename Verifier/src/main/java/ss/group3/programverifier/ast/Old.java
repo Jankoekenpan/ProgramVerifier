@@ -11,4 +11,9 @@ public class Old extends ContractExpression {
     public String getIdentifier() {
         return identifier;
     }
+
+    @Override
+    public String toString() {
+        return "OLD{identifier=" + identifier + "}";
+    }
 }

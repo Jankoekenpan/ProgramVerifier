@@ -16,4 +16,9 @@ public class GreaterThan extends Expression {
     public Expression getSecond() {
         return second;
     }
+
+    @Override
+    public String toString() {
+        return "GREATER_THAN{first=" + first + ",second=" + second + "}";
+    }
 }

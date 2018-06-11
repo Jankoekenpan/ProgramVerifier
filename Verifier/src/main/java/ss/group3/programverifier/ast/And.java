@@ -15,4 +15,9 @@ public class And extends Expression {
     public Expression getSecond() {
         return second;
     }
+
+    @Override
+    public String toString() {
+        return "AND{first=" + first + ",second=" + second + "}";
+    }
 }

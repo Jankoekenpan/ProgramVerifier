@@ -25,4 +25,9 @@ public class FunctionCall extends Expression {
     public List<Expression> getArguments() {
         return arguments;
     }
+
+    @Override
+    public String toString() {
+        return "FUNCTION_CALL{functionIdentifier=" + functionIdentifier + ",arguments=" + arguments + "}";
+    }
 }

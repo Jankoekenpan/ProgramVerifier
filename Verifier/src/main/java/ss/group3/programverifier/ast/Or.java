@@ -16,4 +16,9 @@ public class Or extends Expression {
     public Expression getSecond() {
         return second;
     }
+
+    @Override
+    public String toString() {
+        return "OR{first=" + first + ",second=" + second + "}";
+    }
 }

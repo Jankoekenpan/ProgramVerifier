@@ -17,4 +17,9 @@ public class Contract extends Statement {
     public Expression getExpression() {
         return expression;
     }
+
+    @Override
+    public String toString() {
+        return "CONTRACT{contractType="+contractType+",expression="+expression+"}";
+    }
 }

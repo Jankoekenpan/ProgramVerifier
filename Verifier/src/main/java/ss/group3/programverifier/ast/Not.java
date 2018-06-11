@@ -2,13 +2,18 @@ package ss.group3.programverifier.ast;
 
 public class Not extends Expression {
 
-    private final Expression negatedExpression;
+    private final Expression expression;
 
-    public Not(Expression negatedExpression) {
-        this.negatedExpression = negatedExpression;
+    public Not(Expression expression) {
+        this.expression = expression;
     }
 
-    public Expression getNegatedExpression() {
-        return negatedExpression;
+    public Expression getExpression() {
+        return expression;
+    }
+
+    @Override
+    public String toString() {
+        return "NOT{expression=" + expression + "}";
     }
 }

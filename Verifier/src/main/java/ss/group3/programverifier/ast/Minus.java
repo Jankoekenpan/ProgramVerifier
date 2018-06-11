@@ -17,4 +17,9 @@ public class Minus extends Expression {
         return second;
     }
 
+    @Override
+    public String toString() {
+        return "MINUS{first=" + first + ",second=" + second + "}";
+    }
+
 }

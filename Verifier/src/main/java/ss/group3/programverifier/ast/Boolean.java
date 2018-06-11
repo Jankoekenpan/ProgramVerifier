@@ -11,4 +11,9 @@ public class Boolean extends Expression {
     public boolean getValue() {
         return value;
     }
+
+    @Override
+    public String toString() {
+        return "BOOLEAN{value="+value+"}";
+    }
 }

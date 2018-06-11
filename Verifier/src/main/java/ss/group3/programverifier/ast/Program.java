@@ -15,4 +15,9 @@ public class Program extends AstNode {
         return contents;
     }
 
+    @Override
+    public String toString() {
+        return "PROGRAM{statements=" + contents + "}";
+    }
+
 }

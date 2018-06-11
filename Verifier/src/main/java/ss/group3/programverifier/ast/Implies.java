@@ -16,4 +16,9 @@ public class Implies extends Expression {
     public Expression getSecond() {
         return second;
     }
+
+    @Override
+    public String toString() {
+        return "IMPLIES{first=" + first + ",second=" + second + "}";
+    }
 }

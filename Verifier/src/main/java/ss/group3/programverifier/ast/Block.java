@@ -14,4 +14,9 @@ public class Block extends Statement {
     public List<Statement> getStatements() {
         return statements;
     }
+
+    @Override
+    public String toString() {
+        return "BLOCK{statements="+statements+"}";
+    }
 }
