@@ -8,13 +8,16 @@ import ss.group3.util.Pair;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
 
 public class LanguageProver extends LanguageBaseListener {
 
     private static final String PATH_CONDITION = "_";
 
-    private SymbolTable symbolTable = new SymbolTable();
+    //TODO use this, and should the AST classes have references to their parent nodes?
+    private final IdentityHashMap<Statement, String> pathConditions = new IdentityHashMap<>();
+
     private String currentPathCondition;
     private int pathConditionCount = 0;
 
@@ -28,12 +31,16 @@ public class LanguageProver extends LanguageBaseListener {
     }
 
     public List<SmtStatement> toSMT(Statement statement) {
+        //TODO register path condition
+
         if (statement instanceof Declaration) {
             return toSMT((Declaration) statement);
         } else if (statement instanceof Assign) {
             return toSMT((Assign) statement);
         } else if (statement instanceof FunctionDef) {
             return toSMT((FunctionDef) statement);
+        } else if (statement instanceof If) {
+            return toSMT((If) statement);
         }
 
         else {
@@ -58,11 +65,35 @@ public class LanguageProver extends LanguageBaseListener {
         return smtStatements;
     }
 
+    public List<SmtStatement> toSMT(If ifStatement) {
+        List<SmtStatement> smtStatements = new ArrayList<>();
+
+        String lastPathCondition = currentPathCondition;
+
+        //TODO create new path conditions
+        Expression condition = ifStatement.getCondition();
+        SmtExpr smtCondition = toSMTExpression(condition);
+
+        nextPathCondition();
+        Declaration declaration = new Declaration(Type.BOOLEAN, currentPathCondition, condition);
+        smtStatements.addAll(toSMT(declaration));
+
+        Statement thanBranch = ifStatement.getThanBranch();
+        //TODO in the than branch every assignment should have the path condition and identifier built int
+
+        if (ifStatement.hasElseBranch()) {
+            //TODO
+        }
+
+
+        currentPathCondition = lastPathCondition;
+        return smtStatements;
+    }
+
     public List<SmtStatement> toSMT(Assign assign) {
         List<SmtStatement> smtStatements = new ArrayList<>();
 
         //TODO take path condition into account somehow
-
 
 
         return smtStatements;
@@ -72,7 +103,7 @@ public class LanguageProver extends LanguageBaseListener {
         List<SmtStatement> smtStatements = new ArrayList<>();
 
         for (Pair<Type, String> pair : functionDef.getParameterPairs()) {
-            Declaration declaration = new Declaration(pair.getFirst(), pair.getSecond());
+            Statement declaration = new Declaration(pair.getFirst(), pair.getSecond());
             smtStatements.addAll(toSMT(declaration));
         }
 
@@ -177,6 +208,7 @@ public class LanguageProver extends LanguageBaseListener {
         } else if (expression instanceof FunctionCall) {
             FunctionCall functionCall = (FunctionCall) expression;
             throw new UnsupportedOperationException("NOT IMPLEMENTED: trying to convert function call expression to smt expression");
+            //TODO Z3 has support for functions. use that? :O
         }
 
         else {
