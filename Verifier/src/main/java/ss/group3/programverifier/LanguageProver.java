@@ -4,7 +4,6 @@ import ss.group3.programverifier.ast.*;
 import ss.group3.programverifier.ast.Boolean;
 import ss.group3.programverifier.ast.Number;
 import ss.group3.programverifier.smt.*;
-import sun.tools.tree.LessOrEqualExpression;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -30,12 +29,61 @@ public class LanguageProver extends LanguageBaseListener {
     public List<SmtStatement> toSMT(Statement statement) {
         if (statement instanceof Declaration) {
             return toSMT((Declaration) statement);
+        } else if (statement instanceof Assign) {
+            return toSMT((Assign) statement);
+        } else if (statement instanceof FunctionDef) {
+            return toSMT((FunctionDef) statement);
         }
 
         else {
             return null;
         }
     }
+
+    public List<SmtStatement> toSMT(Declaration declaration) {
+        List<SmtStatement> smtStatements = new ArrayList<>();
+        Type type = declaration.getType();
+        String identifier = declaration.getIdentifier();
+
+        SmtFunDecl smtFunDecl = new SmtFunDecl(identifier, toSMTType(type));
+        smtStatements.add(smtFunDecl);
+
+        if (declaration.hasExpression()) {
+            Expression expression = declaration.getExpression();
+            SmtAssert smtAssert = new SmtAssert(toSMTExpression(expression));
+            smtStatements.add(smtAssert);
+        }
+
+        return smtStatements;
+    }
+
+    public List<SmtStatement> toSMT(Assign assign) {
+        List<SmtStatement> smtStatements = new ArrayList<>();
+
+        //TODO
+
+
+        return smtStatements;
+    }
+
+    public List<SmtStatement> toSMT(FunctionDef functionDef) {
+        List<SmtStatement> smtStatements = new ArrayList<>();
+
+        //TODO
+
+
+        return smtStatements;
+    }
+
+
+    private SmtType toSMTType(Type type) {
+        switch(type) {
+            case INT: return SmtType.INT;
+            case BOOLEAN: return SmtType.BOOL;
+            default: return null;
+        }
+    }
+
 
     public SmtExpr toSMTExpression(Expression expression) {
         if (expression instanceof Number) {
@@ -127,32 +175,6 @@ public class LanguageProver extends LanguageBaseListener {
 
         else {
             return null;
-        }
-    }
-
-    public List<SmtStatement> toSMT(Declaration declaration) {
-        List<SmtStatement> smtStatements = new ArrayList<>();
-        Type type = declaration.getType();
-        String identifier = declaration.getIdentifier();
-
-        SmtFunDecl smtFunDecl = new SmtFunDecl(identifier, toSMTType(type));
-        smtStatements.add(smtFunDecl);
-
-        if (declaration.hasExpression()) {
-            Expression expression = declaration.getExpression();
-            SmtAssert smtAssert = new SmtAssert(toSMTExpression(expression));
-            smtStatements.add(smtAssert);
-        }
-
-        return smtStatements;
-    }
-
-
-    private SmtType toSMTType(Type type) {
-        switch(type) {
-            case INT: return SmtType.INT;
-            case BOOLEAN: return SmtType.BOOL;
-            default: return null;
         }
     }
 
