@@ -2,13 +2,13 @@ package ss.group3.programverifier.smt;
 
 public class SmtAssert extends SmtStatement {
 
-    private final SmtBoolExpr boolExpr;
+    private final SmtExpr boolExpr;
 
-    public SmtAssert(SmtBoolExpr boolExpr) {
+    public SmtAssert(SmtExpr boolExpr) {
         this.boolExpr = boolExpr;
     }
 
-    public SmtBoolExpr getBoolExpr() {
+    public SmtExpr getBoolExpr() {
         return boolExpr;
     }
 

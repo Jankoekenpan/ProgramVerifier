@@ -1,14 +1,14 @@
 package ss.group3.programverifier.smt;
 
-public class SmtNotExpr extends SmtBoolExpr {
+public class SmtNotExpr extends SmtExpr {
 
-    private final SmtBoolExpr boolExpr;
+    private final SmtExpr boolExpr;
 
-    public SmtNotExpr(SmtBoolExpr boolExpr) {
+    public SmtNotExpr(SmtExpr boolExpr) {
         this.boolExpr = boolExpr;
     }
 
-    public SmtBoolExpr getBoolExpr() {
+    public SmtExpr getBoolExpr() {
         return boolExpr;
     }
 

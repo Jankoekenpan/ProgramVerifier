@@ -2,7 +2,7 @@ package ss.group3.programverifier.smt;
 
 import java.math.BigInteger;
 
-public class SmtIntLiteralExpr extends SmtIntExpr {
+public class SmtIntLiteralExpr extends SmtExpr {
 
     private final BigInteger value;
 

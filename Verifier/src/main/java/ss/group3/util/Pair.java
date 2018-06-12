@@ -22,7 +22,7 @@ public final class Pair<T, U> {
 
     @Override
     public String toString() {
-        return "{" + first + "," + second + "}";
+        return "(" + first + "," + second + ")";
     }
 
     @Override

@@ -1,10 +1,10 @@
 package ss.group3.programverifier.smt;
 
-public class SmtTimesExpr extends SmtExpr {
+public class SmtAndExpr extends SmtExpr {
 
     public SmtExpr first, second;
 
-    public SmtTimesExpr(SmtExpr first, SmtExpr second) {
+    public SmtAndExpr(SmtExpr first, SmtExpr second) {
         this.first = first;
         this.second = second;
     }
@@ -19,6 +19,6 @@ public class SmtTimesExpr extends SmtExpr {
 
     @Override
     public String toString() {
-        return "(* " + first + " " + second + ")";
+        return "(and " + first + " " + second + ")";
     }
 }

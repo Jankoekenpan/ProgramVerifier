@@ -1,25 +1,25 @@
 package ss.group3.programverifier.smt;
 
-public class SmtIfThenElseExpr<T extends SmtExpr> extends SmtExpr {
+public class SmtIfThenElseExpr extends SmtExpr {
 
-    private final SmtBoolExpr condition;
-    private final T thanBranch, elseBranch;
+    private final SmtExpr condition;
+    private final SmtExpr thanBranch, elseBranch;
 
-    public SmtIfThenElseExpr(SmtBoolExpr condition, T thanBranch, T elseBranch) {
+    public SmtIfThenElseExpr(SmtExpr condition, SmtExpr thanBranch, SmtExpr elseBranch) {
         this.condition = condition;
         this.thanBranch = thanBranch;
         this.elseBranch = elseBranch;
     }
 
-    public SmtBoolExpr getCondition() {
+    public SmtExpr getCondition() {
         return condition;
     }
 
-    public T getThanBranch() {
+    public SmtExpr getThanBranch() {
         return thanBranch;
     }
 
-    public T getElseBranch() {
+    public SmtExpr getElseBranch() {
         return elseBranch;
     }
 

@@ -1,24 +1,24 @@
 package ss.group3.programverifier.smt;
 
-public class SmtImpliesExpr extends SmtBoolExpr {
+public class SmtImpliesExpr extends SmtExpr {
 
-    private final SmtBoolExpr first, second;
+    private final SmtExpr first, second;
 
-    public SmtImpliesExpr(SmtBoolExpr first, SmtBoolExpr second) {
+    public SmtImpliesExpr(SmtExpr first, SmtExpr second) {
         this.first = first;
         this.second = second;
     }
 
-    public SmtBoolExpr getFirst() {
+    public SmtExpr getFirst() {
         return first;
     }
 
-    public SmtBoolExpr getSecond() {
+    public SmtExpr getSecond() {
         return second;
     }
 
     @Override
     public String toString() {
-        return "(>= " + first + " " + second + ")";
+        return "(=> " + first + " " + second + ")";
     }
 }

@@ -1,19 +1,19 @@
 package ss.group3.programverifier.smt;
 
-public class SmtLessThanExpr extends SmtBoolExpr {
+public class SmtLessThanExpr extends SmtExpr {
 
-    private final SmtIntExpr first, second;
+    private final SmtExpr first, second;
 
-    public SmtLessThanExpr(SmtIntExpr first, SmtIntExpr second) {
+    public SmtLessThanExpr(SmtExpr first, SmtExpr second) {
         this.first = first;
         this.second = second;
     }
 
-    public SmtIntExpr getFirst() {
+    public SmtExpr getFirst() {
         return first;
     }
 
-    public SmtIntExpr getSecond() {
+    public SmtExpr getSecond() {
         return second;
     }
 
