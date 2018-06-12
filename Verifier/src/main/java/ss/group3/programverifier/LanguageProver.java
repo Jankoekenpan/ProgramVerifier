@@ -4,6 +4,7 @@ import ss.group3.programverifier.ast.*;
 import ss.group3.programverifier.ast.Boolean;
 import ss.group3.programverifier.ast.Number;
 import ss.group3.programverifier.smt.*;
+import ss.group3.util.Pair;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -60,7 +61,8 @@ public class LanguageProver extends LanguageBaseListener {
     public List<SmtStatement> toSMT(Assign assign) {
         List<SmtStatement> smtStatements = new ArrayList<>();
 
-        //TODO
+        //TODO take path condition into account somehow
+
 
 
         return smtStatements;
@@ -69,8 +71,12 @@ public class LanguageProver extends LanguageBaseListener {
     public List<SmtStatement> toSMT(FunctionDef functionDef) {
         List<SmtStatement> smtStatements = new ArrayList<>();
 
-        //TODO
+        for (Pair<Type, String> pair : functionDef.getParameterPairs()) {
+            Declaration declaration = new Declaration(pair.getFirst(), pair.getSecond());
+            smtStatements.addAll(toSMT(declaration));
+        }
 
+        smtStatements.addAll(toSMT(functionDef.getBody()));
 
         return smtStatements;
     }
