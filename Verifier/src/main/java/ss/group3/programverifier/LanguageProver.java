@@ -1,24 +1,220 @@
 package ss.group3.programverifier;
 
+import com.microsoft.z3.*;
 import ss.group3.programverifier.ast.*;
-import ss.group3.programverifier.ast.Boolean;
 import ss.group3.programverifier.ast.Number;
-import ss.group3.programverifier.smt.*;
+import ss.group3.programverifier.ast.Boolean;
 import ss.group3.util.Pair;
 
-import java.math.BigInteger;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class LanguageProver {
 
-    private static final String PATH_CONDITION_IDENTIFIER = "PATH";
+    private static final String PATH_CONDITION_IDENTIFIER = "_PATH";
 
     private final Map<Integer, Map<String, String>> conditionsToVariablesToRenamedVariables = new HashMap<>();
-
     private int currentPathCondition;
 
+    /** The Z3 main context */
+    private final Context context;
+
+    /** Mapping of smt identifiers to function declaration,
+     * used for program identifier evaluation of smt expressions */
+    private final Map<String, FuncDecl> smtIdentifiers = new HashMap<>();
+
     public LanguageProver() {
+        this.context = new Context();
     }
+
+    public boolean proveProgram(Program program) {
+        context.mkBoolConst(getSmtIdentifier(PATH_CONDITION_IDENTIFIER, currentPathCondition));
+
+        return program.getContents().stream().allMatch(statement -> proveStatement(statement, currentPathCondition));
+    }
+
+    private boolean proveStatement(Statement statement, final int pathCondition) {
+        if (statement instanceof Declaration) {
+            return proveDeclaration((Declaration) statement, pathCondition);
+        } else if (statement instanceof FunctionDef) {
+            return proveFunctionDef((FunctionDef) statement, pathCondition);
+        } else if (statement instanceof Block) {
+            return ((Block) statement).getStatements().stream().allMatch(s -> proveStatement(s, pathCondition));
+        } else if (statement instanceof Assign) {
+            return proveAssign((Assign) statement, pathCondition);
+        } else if (statement instanceof If) {
+            //TODO
+            return true;
+        }
+
+        //TODO other cases
+
+        return false;
+    }
+
+    private boolean proveDeclaration(Declaration declaration, final int pathCondition) {
+        Type type = declaration.getType();
+        String id = declaration.getIdentifier();
+
+        String smtIdentifier = getSmtIdentifier(id, pathCondition);
+        FuncDecl funcDecl = context.mkFuncDecl(smtIdentifier, new Sort[0], toSMTType(type));
+        smtIdentifiers.put(smtIdentifier, funcDecl);
+
+        if (declaration.hasExpression()) {
+            Assign assign = new Assign(id, declaration.getExpression());
+            return proveAssign(assign, pathCondition);
+        }
+
+        return true;
+    }
+
+    private boolean proveAssign(Assign assign, int pathCondition) {
+        //TODO make conditional assign
+
+        return true;
+    }
+
+    private boolean proveFunctionDef(FunctionDef functionDef, final int pathCondition) {
+        int canBeExecutedPathCondition = nextPathCondition();
+        for (Pair<Type, String> pair : functionDef.getParameterPairs()) {
+            Type type = pair.getFirst();
+            String identifier = pair.getSecond();
+
+            Declaration declaration = new Declaration(type, identifier);
+            proveDeclaration(declaration, pathCondition);
+            //TODO `and` the result?
+        }
+
+        Statement body = functionDef.getBody();
+        proveStatement(body, canBeExecutedPathCondition);
+        //TODO `and` the result?
+
+        //TODO contracts
+        //Set<Contract> contracts = functionDef.getContracts();
+
+        return true;
+    }
+
+
+    public Expr toSMTExpression(final Expression expression, final int pathCondition) {
+        if (expression instanceof Number) {
+            return context.mkInt(((Number) expression).getValue().toString(10));
+        } else if (expression instanceof Boolean) {
+            return context.mkBool(((Boolean) expression).getValue());
+        } else if (expression instanceof Identifier) {
+            //use cached fun decl and evaluate with zero arguments
+            Identifier identifier = (Identifier) expression;
+            String id = identifier.getValue();
+            String smtId = getSmtIdentifier(id, pathCondition);
+            return smtIdentifiers.get(smtId).apply(new Expr[0]);
+        } else if (expression instanceof GreaterThan) {
+            GreaterThan greaterThan = (GreaterThan) expression;
+            return context.mkGt(
+                    (ArithExpr) toSMTExpression(greaterThan.getFirst(), pathCondition),
+                    (ArithExpr) toSMTExpression(greaterThan.getSecond(), pathCondition));
+        } else if (expression instanceof GreaterThanOrEqual) {
+            GreaterThanOrEqual greaterThanOrEqual = (GreaterThanOrEqual) expression;
+            return context.mkGe(
+                    (ArithExpr) toSMTExpression(greaterThanOrEqual.getFirst(), pathCondition),
+                    (ArithExpr) toSMTExpression(greaterThanOrEqual.getSecond(), pathCondition));
+        } else if (expression instanceof LessThan) {
+            LessThan lessThan = (LessThan) expression;
+            return context.mkLt(
+                    (ArithExpr) toSMTExpression(lessThan.getFirst(), pathCondition),
+                    (ArithExpr) toSMTExpression(lessThan.getSecond(), pathCondition));
+        } else if (expression instanceof LessThanOrEqual) {
+            LessThanOrEqual lessThanOrEqual = (LessThanOrEqual) expression;
+            return context.mkLe(
+                    (ArithExpr) toSMTExpression(lessThanOrEqual.getFirst(), pathCondition),
+                    (ArithExpr) toSMTExpression(lessThanOrEqual.getSecond(), pathCondition));
+        } else if (expression instanceof Equals) {
+            Equals equals = (Equals) expression;
+            return context.mkEq(
+                    toSMTExpression(equals.getFirst(), pathCondition),
+                    toSMTExpression(equals.getSecond(), pathCondition));
+        } else if (expression instanceof NotEquals) {
+            NotEquals notEquals = (NotEquals) expression;
+            return context.mkNot(context.mkEq(
+                    toSMTExpression(notEquals.getFirst(), pathCondition),
+                    toSMTExpression(notEquals.getSecond(), pathCondition)));
+        } else if (expression instanceof And) {
+            And and = (And) expression;
+            return context.mkAnd(
+                    (BoolExpr) toSMTExpression(and.getFirst(), pathCondition),
+                    (BoolExpr) toSMTExpression(and.getSecond(), pathCondition));
+        } else if (expression instanceof Or) {
+            Or or = (Or) expression;
+            return context.mkOr(
+                    (BoolExpr) toSMTExpression(or.getFirst(), pathCondition),
+                    (BoolExpr) toSMTExpression(or.getSecond(), pathCondition));
+        } else if (expression instanceof Implies) {
+            Implies implies = (Implies) expression;
+            return context.mkImplies(
+                    (BoolExpr) toSMTExpression(implies.getFirst(), pathCondition),
+                    (BoolExpr) toSMTExpression(implies.getSecond(), pathCondition));
+        } else if (expression instanceof TernaryIf) {
+            TernaryIf ternaryIf = (TernaryIf) expression;
+            return context.mkITE(
+                    (BoolExpr) toSMTExpression(ternaryIf.getCondition(), pathCondition),
+                    toSMTExpression(ternaryIf.getThanExpression(), pathCondition),
+                    toSMTExpression(ternaryIf.getElseExpression(), pathCondition));
+        } else if (expression instanceof Plus) {
+            Plus plus = (Plus) expression;
+            return context.mkAdd(
+                    (ArithExpr) toSMTExpression(plus.getFirst(), pathCondition),
+                    (ArithExpr) toSMTExpression(plus.getSecond(), pathCondition));
+        } else if (expression instanceof Minus) {
+            Minus minus = (Minus) expression;
+            return context.mkSub(
+                    (ArithExpr) toSMTExpression(minus.getFirst(), pathCondition),
+                    (ArithExpr) toSMTExpression(minus.getSecond(), pathCondition));
+        } else if (expression instanceof Times) {
+            Times times = (Times) expression;
+            return context.mkMul(
+                    (ArithExpr) toSMTExpression(times.getFirst(), pathCondition),
+                    (ArithExpr) toSMTExpression(times.getSecond(), pathCondition));
+        } else if (expression instanceof Divide) {
+            Divide divide = (Divide) expression;
+            return context.mkDiv(
+                    (ArithExpr) toSMTExpression(divide.getFirst(), pathCondition),
+                    (ArithExpr) toSMTExpression(divide.getSecond(), pathCondition));
+        } else if (expression instanceof Not) {
+            Not not = (Not) expression;
+            return context.mkNot((BoolExpr) toSMTExpression(not.getExpression(), pathCondition));
+        } else if (expression instanceof UnaryMinus) {
+            UnaryMinus unaryMinus = (UnaryMinus) expression;
+            return context.mkUnaryMinus((ArithExpr) toSMTExpression(unaryMinus.getExpression(), pathCondition));
+        } else if (expression instanceof FunctionCall) {
+            FunctionCall functionCall = (FunctionCall) expression;
+
+            //TODO is this the right way to do it?
+            String functionId = functionCall.getFunctionIdentifier();
+            List<Expression> arguments = functionCall.getArguments();
+
+            FuncDecl funDecl = smtIdentifiers.get(functionId);
+            Expr[] args = arguments.stream().map(e -> toSMTExpression(e, pathCondition)).toArray(size -> new Expr[size]);
+
+            return funDecl.apply(args);
+        }
+
+        //TODO contract expressions
+
+        else {
+            throw new UnsupportedOperationException("Tried to convert Expression " + expression + " to an SMT expression, but didn't know how to.");
+        }
+    }
+
+    private Sort toSMTType(Type type) {
+        switch(type) {
+            case INT: return context.getIntSort();
+            case BOOLEAN: return context.getBoolSort();
+            default: return null;
+        }
+    }
+
+
 
     private int nextPathCondition() {
         return ++currentPathCondition;
@@ -32,204 +228,6 @@ public class LanguageProver {
 
     private String toSMTIdentifier(String identifier, int pathCondition) {
         return identifier + "_" + pathCondition;
-    }
-
-    private String getSmtIdentifier(String identifier) {
-        return getSmtIdentifier(identifier, currentPathCondition);
-    }
-
-    public List<SmtStatement> toSMT(Statement statement, int pathCondition) {
-
-        if (statement instanceof Declaration) {
-            return toSMT((Declaration) statement, pathCondition);
-        } else if (statement instanceof Assign) {
-            return toSMT((Assign) statement, pathCondition);
-        } else if (statement instanceof FunctionDef) {
-            return toSMT((FunctionDef) statement, pathCondition);
-        } else if (statement instanceof If) {
-            return toSMT((If) statement, pathCondition);
-        } else if (statement instanceof While) {
-            return toSMT((While) statement, pathCondition);
-        }
-
-        else {
-            return null;
-        }
-    }
-
-    public List<SmtStatement> toSMT(Declaration declaration, int pathCondition) {
-        List<SmtStatement> smtStatements = new ArrayList<>();
-        Type type = declaration.getType();
-        String identifier = declaration.getIdentifier();
-
-        SmtFunDecl smtFunDecl = new SmtFunDecl(identifier, toSMTType(type));
-        smtStatements.add(smtFunDecl);
-
-        if (declaration.hasExpression()) {
-            Expression expression = declaration.getExpression();
-            SmtAssert smtAssert = new SmtAssert(toSMTExpression(expression));
-            smtStatements.add(smtAssert);
-        }
-
-        return smtStatements;
-    }
-
-    public List<SmtStatement> toSMT(If ifStatement, final int pathCondition) {
-        List<SmtStatement> smtStatements = new ArrayList<>();
-
-        //TODO create new path conditions
-        Expression condition = ifStatement.getCondition();
-        SmtExpr smtCondition = toSMTExpression(condition);
-
-        //TODO make a new identifier for the path condition :-)
-
-        nextPathCondition();
-        Declaration declaration = new Declaration(Type.BOOLEAN, toSMTIdentifier(PATH_CONDITION_IDENTIFIER, pathCondition), condition);
-        smtStatements.addAll(toSMT(declaration, pathCondition));
-
-        Statement thanBranch = ifStatement.getThanBranch();
-        //TODO in the than branch every assignment should have the path condition and identifier built int
-
-        if (ifStatement.hasElseBranch()) {
-            //TODO
-        }
-
-        return smtStatements;
-    }
-
-    public List<SmtStatement> toSMT(Assign assign, final int pathCondition) {
-        List<SmtStatement> smtStatements = new ArrayList<>();
-
-        //TODO take path condition into account somehow
-
-
-        return smtStatements;
-    }
-
-    public List<SmtStatement> toSMT(FunctionDef functionDef, final int pathCondition) {
-        List<SmtStatement> smtStatements = new ArrayList<>();
-
-        for (Pair<Type, String> pair : functionDef.getParameterPairs()) {
-            Statement declaration = new Declaration(pair.getFirst(), pair.getSecond());
-            smtStatements.addAll(toSMT(declaration, pathCondition));
-        }
-
-        smtStatements.addAll(toSMT(functionDef.getBody(), pathCondition));
-
-        return smtStatements;
-    }
-
-    public List<SmtStatement> toSMT(While whileStatement, final int pathCondition) {
-        List<SmtStatement> smtStatements = new ArrayList<>();
-
-        //TODO while loop weirdness
-
-
-        return smtStatements;
-    }
-
-
-    private SmtType toSMTType(Type type) {
-        switch(type) {
-            case INT: return SmtType.INT;
-            case BOOLEAN: return SmtType.BOOL;
-            default: return null;
-        }
-    }
-
-
-    public SmtExpr toSMTExpression(Expression expression) {
-        if (expression instanceof Number) {
-            return new SmtIntLiteralExpr(((Number) expression).getValue());
-        } else if (expression instanceof Boolean) {
-            return new SmtBoolLiteralExpr(((Boolean) expression).getValue());
-        } else if (expression instanceof Identifier) {
-            return new SmtIdentExpr(((Identifier) expression).getValue());
-        } else if (expression instanceof GreaterThan) {
-            GreaterThan greaterThan = (GreaterThan) expression;
-            return new SmtGreaterThanExpr(
-                    toSMTExpression(greaterThan.getFirst()),
-                    toSMTExpression(greaterThan.getSecond()));
-        } else if (expression instanceof GreaterThanOrEqual) {
-            GreaterThanOrEqual greaterThanOrEqual = (GreaterThanOrEqual) expression;
-            return new SmtGreaterThanOrEqualExpr(
-                    toSMTExpression(greaterThanOrEqual.getFirst()),
-                    toSMTExpression(greaterThanOrEqual.getSecond()));
-        } else if (expression instanceof LessThan) {
-            LessThan lessThan = (LessThan) expression;
-            return new SmtLessThanExpr(
-                    toSMTExpression(lessThan.getFirst()),
-                    toSMTExpression(lessThan.getSecond()));
-        } else if (expression instanceof LessThanOrEqual) {
-            LessThanOrEqual lessThanOrEqual = (LessThanOrEqual) expression;
-            return new SmtLessThanOrEqualExpr(
-                    toSMTExpression(lessThanOrEqual.getFirst()),
-                    toSMTExpression(lessThanOrEqual.getSecond()));
-        } else if (expression instanceof Equals) {
-            Equals equals = (Equals) expression;
-            return new SmtEqualsExpr(toSMTExpression(equals.getFirst()),
-                    toSMTExpression(equals.getSecond()));
-        } else if (expression instanceof NotEquals) {
-            NotEquals notEquals = (NotEquals) expression;
-            return new SmtNotExpr(new SmtEqualsExpr(
-                    toSMTExpression(notEquals.getFirst()),
-                    toSMTExpression(notEquals.getSecond())));
-        } else if (expression instanceof And) {
-            And and = (And) expression;
-            return new SmtAndExpr(
-                    toSMTExpression(and.getFirst()),
-                    toSMTExpression(and.getSecond()));
-        } else if (expression instanceof Or) {
-            Or or = (Or) expression;
-            return new SmtOrExpr(
-                    toSMTExpression(or.getFirst()),
-                    toSMTExpression(or.getSecond()));
-        } else if (expression instanceof Implies) {
-            Implies implies = (Implies) expression;
-            return new SmtImpliesExpr(
-                    toSMTExpression(implies.getFirst()),
-                    toSMTExpression(implies.getSecond()));
-        } else if (expression instanceof TernaryIf) {
-            TernaryIf ternaryIf = (TernaryIf) expression;
-            return new SmtIfThenElseExpr(
-                    toSMTExpression(ternaryIf.getCondition()),
-                    toSMTExpression(ternaryIf.getThanExpression()),
-                    toSMTExpression(ternaryIf.getElseExpression()));
-        } else if (expression instanceof Plus) {
-            Plus plus = (Plus) expression;
-            return new SmtPlusExpr(
-                    toSMTExpression(plus.getFirst()),
-                    toSMTExpression(plus.getSecond()));
-        } else if (expression instanceof Minus) {
-            Minus minus = (Minus) expression;
-            return new SmtMinusExpr(
-                    toSMTExpression(minus.getFirst()),
-                    toSMTExpression(minus.getSecond()));
-        } else if (expression instanceof Times) {
-            Times times = (Times) expression;
-            return new SmtTimesExpr(
-                    toSMTExpression(times.getFirst()),
-                    toSMTExpression(times.getSecond()));
-        } else if (expression instanceof Divide) {
-            Divide divide = (Divide) expression;
-            return new SmtDivideExpr(
-                    toSMTExpression(divide.getFirst()),
-                    toSMTExpression(divide.getSecond()));
-        } else if (expression instanceof Not) {
-            return new SmtNotExpr(toSMTExpression(((Not) expression).getExpression()));
-        } else if (expression instanceof UnaryMinus) {
-            return new SmtMinusExpr(
-                    new SmtIntLiteralExpr(new BigInteger("0")),
-                    toSMTExpression(((UnaryMinus) expression).getExpression()));
-        } else if (expression instanceof FunctionCall) {
-            FunctionCall functionCall = (FunctionCall) expression;
-            throw new UnsupportedOperationException("NOT IMPLEMENTED: trying to convert function call expression to smt expression");
-            //TODO Z3 has support for functions. use that? :O or just 'unroll' the function?
-        }
-
-        else {
-            return null;
-        }
     }
 
 }
