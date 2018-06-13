@@ -3,16 +3,16 @@ package ss.group3.programverifier.ast;
 public class TernaryIf extends Expression {
 
     private final Expression condition;
-    private final Expression thanExpression, elseExpression;
+    private final Expression thenExpression, elseExpression;
 
-    public TernaryIf(Expression condition, Expression thanExpression, Expression elseExpression) {
+    public TernaryIf(Expression condition, Expression thenExpression, Expression elseExpression) {
         this.condition = condition;
-        this.thanExpression = thanExpression;
+        this.thenExpression = thenExpression;
         this.elseExpression = elseExpression;
     }
 
-    public Expression getThanExpression() {
-        return thanExpression;
+    public Expression getThenExpression() {
+        return thenExpression;
     }
 
     public Expression getElseExpression() {
@@ -25,7 +25,7 @@ public class TernaryIf extends Expression {
 
     @Override
     public String toString() {
-        return "TERNARY_IF{condition=" + condition + ",thanExpression=" + thanExpression + ",elseExpression=" + elseExpression + "}";
+        return "TERNARY_IF{condition=" + condition + ",thanExpression=" + thenExpression + ",elseExpression=" + elseExpression + "}";
     }
 
 }

@@ -88,7 +88,7 @@ public class SMTGenerator {
         Declaration declaration = new Declaration(Type.BOOLEAN, toSMTIdentifier(PATH_CONDITION_IDENTIFIER, pathCondition), condition);
         smtStatements.addAll(toSMT(declaration, pathCondition));
 
-        Statement thanBranch = ifStatement.getThanBranch();
+        Statement thanBranch = ifStatement.getThenBranch();
         //TODO in the than branch every assignment should have the path condition and identifier built int
 
         if (ifStatement.hasElseBranch()) {
@@ -194,7 +194,7 @@ public class SMTGenerator {
             TernaryIf ternaryIf = (TernaryIf) expression;
             return new SmtIfThenElseExpr(
                     toSMTExpression(ternaryIf.getCondition()),
-                    toSMTExpression(ternaryIf.getThanExpression()),
+                    toSMTExpression(ternaryIf.getThenExpression()),
                     toSMTExpression(ternaryIf.getElseExpression()));
         } else if (expression instanceof Plus) {
             Plus plus = (Plus) expression;

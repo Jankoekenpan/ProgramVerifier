@@ -9,7 +9,6 @@ import ss.group3.util.Pair;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class LanguageProver {
 
@@ -70,8 +69,53 @@ public class LanguageProver {
         return true;
     }
 
-    private boolean proveAssign(Assign assign, int pathCondition) {
+    private BoolExpr makePathCondition(int pathCondition, Expr smtExpression) {
+        String smtPathConditionIdentifier = toSMTIdentifier(PATH_CONDITION_IDENTIFIER, pathCondition);
+        FuncDecl funcDecl = context.mkFuncDecl(smtPathConditionIdentifier, new Sort[0], context.getBoolSort());
+
+        smtIdentifiers.put(smtPathConditionIdentifier, funcDecl);
+
+        BoolExpr conditionExpression = (BoolExpr) funcDecl.apply(new Expr[0]);
+        context.mkEq(conditionExpression, smtExpression);
+
+        return conditionExpression;
+    }
+
+    private boolean proveIf(If ifStatement, final int pathCondition) {
+        Expression condition = ifStatement.getCondition();
+        Statement thanBranch = ifStatement.getThenBranch();
+
+        //declare a new path condition variable
+        Expr smtThanCondition = toSMTExpression(condition, pathCondition);
+        int thanPathCondition = nextPathCondition();
+        BoolExpr smtThenPathCondition = makePathCondition(thanPathCondition, smtThanCondition);
+
+        //TODO use results?
+        proveStatement(thanBranch, thanPathCondition);
+
+        if (ifStatement.hasElseBranch()) {
+            Statement elseBranch = ifStatement.getElseBranch();
+
+            Expr smtElseCondition = context.mkNot(smtThenPathCondition);
+            int elsePathCondition = nextPathCondition();
+            makePathCondition(elsePathCondition, smtElseCondition);
+
+            //TODO use results?
+            proveStatement(elseBranch, elsePathCondition);
+        }
+
+        return true;
+    }
+
+    private boolean proveAssign(Assign assign, final int pathCondition) {
         //TODO make conditional assign
+
+        String identifier = assign.getIdentifier();
+        Expression expression = assign.getExpression();
+
+        String c = toSMTIdentifier(PATH_CONDITION_IDENTIFIER, pathCondition);
+        //TODO
+        //context.mkITE();
 
         return true;
     }
@@ -158,7 +202,7 @@ public class LanguageProver {
             TernaryIf ternaryIf = (TernaryIf) expression;
             return context.mkITE(
                     (BoolExpr) toSMTExpression(ternaryIf.getCondition(), pathCondition),
-                    toSMTExpression(ternaryIf.getThanExpression(), pathCondition),
+                    toSMTExpression(ternaryIf.getThenExpression(), pathCondition),
                     toSMTExpression(ternaryIf.getElseExpression(), pathCondition));
         } else if (expression instanceof Plus) {
             Plus plus = (Plus) expression;
