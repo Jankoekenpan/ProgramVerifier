@@ -1,0 +1,10 @@
+# requires n >= 0 #
+# ensures \result == n #
+int incrementntimes(int n) {
+    int i := 0;
+    # invariant i <= 0 && i <= n #
+    while (i < n) {
+        i := i + 1;
+    }
+    return i;
+}

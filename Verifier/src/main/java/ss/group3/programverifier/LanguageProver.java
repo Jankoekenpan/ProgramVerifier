@@ -7,40 +7,49 @@ import ss.group3.programverifier.smt.*;
 import ss.group3.util.Pair;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.IdentityHashMap;
-import java.util.List;
+import java.util.*;
 
-public class LanguageProver extends LanguageBaseListener {
+public class LanguageProver {
 
-    private static final String PATH_CONDITION = "_";
+    private static final String PATH_CONDITION_IDENTIFIER = "PATH";
 
-    //TODO use this, and should the AST classes have references to their parent nodes?
-    private final IdentityHashMap<Statement, String> pathConditions = new IdentityHashMap<>();
+    private final Map<Integer, Map<String, String>> conditionsToVariablesToRenamedVariables = new HashMap<>();
 
-    private String currentPathCondition;
-    private int pathConditionCount = 0;
+    private int currentPathCondition;
 
     public LanguageProver() {
-        nextPathCondition();
     }
 
-    private void nextPathCondition() {
-        pathConditionCount++;
-        currentPathCondition = pathConditionCount + PATH_CONDITION;
+    private int nextPathCondition() {
+        return ++currentPathCondition;
     }
 
-    public List<SmtStatement> toSMT(Statement statement) {
-        //TODO register path condition
+    private String getSmtIdentifier(String identifier, int pathCondition) {
+        return conditionsToVariablesToRenamedVariables
+                .computeIfAbsent(pathCondition, s -> new HashMap<>())
+                .computeIfAbsent(identifier, id -> toSMTIdentifier(id, pathCondition));
+    }
+
+    private String toSMTIdentifier(String identifier, int pathCondition) {
+        return identifier + "_" + pathCondition;
+    }
+
+    private String getSmtIdentifier(String identifier) {
+        return getSmtIdentifier(identifier, currentPathCondition);
+    }
+
+    public List<SmtStatement> toSMT(Statement statement, int pathCondition) {
 
         if (statement instanceof Declaration) {
-            return toSMT((Declaration) statement);
+            return toSMT((Declaration) statement, pathCondition);
         } else if (statement instanceof Assign) {
-            return toSMT((Assign) statement);
+            return toSMT((Assign) statement, pathCondition);
         } else if (statement instanceof FunctionDef) {
-            return toSMT((FunctionDef) statement);
+            return toSMT((FunctionDef) statement, pathCondition);
         } else if (statement instanceof If) {
-            return toSMT((If) statement);
+            return toSMT((If) statement, pathCondition);
+        } else if (statement instanceof While) {
+            return toSMT((While) statement, pathCondition);
         }
 
         else {
@@ -48,7 +57,7 @@ public class LanguageProver extends LanguageBaseListener {
         }
     }
 
-    public List<SmtStatement> toSMT(Declaration declaration) {
+    public List<SmtStatement> toSMT(Declaration declaration, int pathCondition) {
         List<SmtStatement> smtStatements = new ArrayList<>();
         Type type = declaration.getType();
         String identifier = declaration.getIdentifier();
@@ -65,18 +74,18 @@ public class LanguageProver extends LanguageBaseListener {
         return smtStatements;
     }
 
-    public List<SmtStatement> toSMT(If ifStatement) {
+    public List<SmtStatement> toSMT(If ifStatement, final int pathCondition) {
         List<SmtStatement> smtStatements = new ArrayList<>();
-
-        String lastPathCondition = currentPathCondition;
 
         //TODO create new path conditions
         Expression condition = ifStatement.getCondition();
         SmtExpr smtCondition = toSMTExpression(condition);
 
+        //TODO make a new identifier for the path condition :-)
+
         nextPathCondition();
-        Declaration declaration = new Declaration(Type.BOOLEAN, currentPathCondition, condition);
-        smtStatements.addAll(toSMT(declaration));
+        Declaration declaration = new Declaration(Type.BOOLEAN, toSMTIdentifier(PATH_CONDITION_IDENTIFIER, pathCondition), condition);
+        smtStatements.addAll(toSMT(declaration, pathCondition));
 
         Statement thanBranch = ifStatement.getThanBranch();
         //TODO in the than branch every assignment should have the path condition and identifier built int
@@ -85,12 +94,10 @@ public class LanguageProver extends LanguageBaseListener {
             //TODO
         }
 
-
-        currentPathCondition = lastPathCondition;
         return smtStatements;
     }
 
-    public List<SmtStatement> toSMT(Assign assign) {
+    public List<SmtStatement> toSMT(Assign assign, final int pathCondition) {
         List<SmtStatement> smtStatements = new ArrayList<>();
 
         //TODO take path condition into account somehow
@@ -99,15 +106,24 @@ public class LanguageProver extends LanguageBaseListener {
         return smtStatements;
     }
 
-    public List<SmtStatement> toSMT(FunctionDef functionDef) {
+    public List<SmtStatement> toSMT(FunctionDef functionDef, final int pathCondition) {
         List<SmtStatement> smtStatements = new ArrayList<>();
 
         for (Pair<Type, String> pair : functionDef.getParameterPairs()) {
             Statement declaration = new Declaration(pair.getFirst(), pair.getSecond());
-            smtStatements.addAll(toSMT(declaration));
+            smtStatements.addAll(toSMT(declaration, pathCondition));
         }
 
-        smtStatements.addAll(toSMT(functionDef.getBody()));
+        smtStatements.addAll(toSMT(functionDef.getBody(), pathCondition));
+
+        return smtStatements;
+    }
+
+    public List<SmtStatement> toSMT(While whileStatement, final int pathCondition) {
+        List<SmtStatement> smtStatements = new ArrayList<>();
+
+        //TODO while loop weirdness
+
 
         return smtStatements;
     }
@@ -208,7 +224,7 @@ public class LanguageProver extends LanguageBaseListener {
         } else if (expression instanceof FunctionCall) {
             FunctionCall functionCall = (FunctionCall) expression;
             throw new UnsupportedOperationException("NOT IMPLEMENTED: trying to convert function call expression to smt expression");
-            //TODO Z3 has support for functions. use that? :O
+            //TODO Z3 has support for functions. use that? :O or just 'unroll' the function?
         }
 
         else {

@@ -56,4 +56,18 @@ public class ParseTest {
         assert program != null;
     }
 
+    @Test
+    public void testCount() throws IOException {
+        CharStream input = new ANTLRFileStream("src/main/resources/count.hello");
+        LanguageLexer lexer = new LanguageLexer(input);
+        TokenStream stream = new CommonTokenStream(lexer);
+        LanguageParser parser = new LanguageParser(stream);
+
+        LanguageParser.ProgramContext programContext = parser.program();
+        assert programContext != null;
+
+        ToAstCompiler toAstCompiler = new ToAstCompiler();
+        Program program = (Program) toAstCompiler.visit(programContext);
+        assert program != null;
+    }
 }
