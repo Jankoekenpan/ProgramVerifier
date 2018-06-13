@@ -3,6 +3,7 @@
 int incrementntimes(int n) {
     int i := 0;
     # invariant i <= 0 && i <= n #
+    # decreases n - i #
     while (i < n) {
         i := i + 1;
     }

@@ -19,6 +19,7 @@ contract    : '#' contract_type expression '#'
 contract_type   : 'requires'
                 | 'ensures'
                 | 'invariant'
+                | 'decreases'
                 ;
 
 type        : 'int'         #intType        //TODO decide on whether this is a bounded bitvector or a true mathematical integer (I prefer the latter)

@@ -7,7 +7,8 @@ public enum ContractKind {
 
     REQUIRES("requires"),
     ENSURES("ensures"),
-    INVARIANT("invariant");
+    INVARIANT("invariant"),
+    DECREASES("decreases");
 
     private static final Map<String, ContractKind> byName = new HashMap<>();
     static {
