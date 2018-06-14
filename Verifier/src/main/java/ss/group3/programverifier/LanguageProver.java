@@ -19,13 +19,16 @@ public class LanguageProver {
 
     /** The Z3 main context */
     private final Context context;
+    /** The Z3 solver */
+    private final Solver solver;
 
     /** Mapping of smt identifiers to function declaration,
      * used for program identifier evaluation of smt expressions */
-    private final Map<String, FuncDecl> smtIdentifiers = new HashMap<>();
+    private final Map<String, Expr> smtIdentifiers = new HashMap<>();
 
     public LanguageProver() {
         this.context = new Context();
+        this.solver = context.mkSolver();
     }
 
     public boolean proveProgram(Program program) {
@@ -58,8 +61,8 @@ public class LanguageProver {
         String id = declaration.getIdentifier();
 
         String smtIdentifier = getSmtIdentifier(id, pathCondition);
-        FuncDecl funcDecl = context.mkFuncDecl(smtIdentifier, new Sort[0], toSMTType(type));
-        smtIdentifiers.put(smtIdentifier, funcDecl);
+        Expr expr = context.mkConst(smtIdentifier, toSMTType(type));
+        smtIdentifiers.put(smtIdentifier, expr);
 
         if (declaration.hasExpression()) {
             Assign assign = new Assign(id, declaration.getExpression());
@@ -71,14 +74,9 @@ public class LanguageProver {
 
     private BoolExpr makePathCondition(int pathCondition, Expr smtExpression) {
         String smtPathConditionIdentifier = toSMTIdentifier(PATH_CONDITION_IDENTIFIER, pathCondition);
-        FuncDecl funcDecl = context.mkFuncDecl(smtPathConditionIdentifier, new Sort[0], context.getBoolSort());
-
-        smtIdentifiers.put(smtPathConditionIdentifier, funcDecl);
-
-        BoolExpr conditionExpression = (BoolExpr) funcDecl.apply(new Expr[0]);
-        context.mkEq(conditionExpression, smtExpression);
-
-        return conditionExpression;
+        BoolExpr smtPathCondition = context.mkBoolConst(smtPathConditionIdentifier);
+        smtIdentifiers.put(smtPathConditionIdentifier, smtPathCondition);
+        return smtPathCondition;
     }
 
     private boolean proveIf(If ifStatement, final int pathCondition) {
@@ -152,7 +150,7 @@ public class LanguageProver {
             Identifier identifier = (Identifier) expression;
             String id = identifier.getValue();
             String smtId = getSmtIdentifier(id, pathCondition);
-            return smtIdentifiers.get(smtId).apply(new Expr[0]);
+            return smtIdentifiers.get(smtId);
         } else if (expression instanceof GreaterThan) {
             GreaterThan greaterThan = (GreaterThan) expression;
             return context.mkGt(
@@ -233,14 +231,16 @@ public class LanguageProver {
         } else if (expression instanceof FunctionCall) {
             FunctionCall functionCall = (FunctionCall) expression;
 
+            throw new UnsupportedOperationException("Function call expressions are not implemented.");
+
             //TODO is this the right way to do it?
-            String functionId = functionCall.getFunctionIdentifier();
-            List<Expression> arguments = functionCall.getArguments();
-
-            FuncDecl funDecl = smtIdentifiers.get(functionId);
-            Expr[] args = arguments.stream().map(e -> toSMTExpression(e, pathCondition)).toArray(size -> new Expr[size]);
-
-            return funDecl.apply(args);
+//            String functionId = functionCall.getFunctionIdentifier();
+//            List<Expression> arguments = functionCall.getArguments();
+//
+//            FuncDecl funDecl = null; //TODO
+//            Expr[] args = arguments.stream().map(e -> toSMTExpression(e, pathCondition)).toArray(size -> new Expr[size]);
+//
+//            return funDecl.apply(args);
         }
 
         //TODO contract expressions
