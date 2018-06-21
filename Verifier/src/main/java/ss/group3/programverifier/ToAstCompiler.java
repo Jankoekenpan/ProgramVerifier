@@ -218,4 +218,15 @@ public class ToAstCompiler extends LanguageBaseVisitor<AstNode> {
         return new Old(context.ID().getText());
     }
 
+    @Override
+    public Contract visitContractStat(LanguageParser.ContractStatContext context) {
+        LanguageParser.ContractContext contractContext = context.contract();
+        LanguageParser.ExpressionContext contractExpressionContext = contractContext.expression();
+        LanguageParser.Contract_typeContext contractTypeContext = contractContext.contract_type();
+
+        ContractKind kind = ContractKind.getByName(contractTypeContext.getText());
+        Expression expression = (Expression) visit(contractExpressionContext);
+        return new Contract(kind, expression);
+    }
+
 }

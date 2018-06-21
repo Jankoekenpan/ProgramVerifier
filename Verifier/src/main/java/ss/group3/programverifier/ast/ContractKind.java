@@ -5,6 +5,7 @@ import java.util.Map;
 
 public enum ContractKind {
 
+    ASSERT("assert"),
     REQUIRES("requires"),
     ENSURES("ensures"),
     INVARIANT("invariant"),
