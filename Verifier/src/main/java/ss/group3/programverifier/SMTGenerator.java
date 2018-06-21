@@ -225,7 +225,7 @@ public class SMTGenerator {
         } else if (expression instanceof FunctionCall) {
             FunctionCall functionCall = (FunctionCall) expression;
             throw new UnsupportedOperationException("NOT IMPLEMENTED: trying to convert function call expression to smt expression");
-            //TODO Z3 has support for functions. use that? :O or just 'unroll' the function?
+            //TODO Z3 has support for functions. use that? :O or just 'unroll/inline' the function?
         }
 
         else {

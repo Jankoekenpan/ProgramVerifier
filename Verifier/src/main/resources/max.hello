@@ -1,8 +1,9 @@
+int max(int x, int y)
 # ensures (x > y) => (\result == x) #       //in the ensures clause, x means the value of x when the method returns (x can be modified in the body)
 # ensures (y <= x) => (\result == y) #
 # ensures x == old(x) #                     //the value of x doesn't change. (i might introduce sugar for this?)
 # ensures y == old(y) #
-int max(int x, int y) {
+{
     int result;
     if (x > y) {
         result := x;
