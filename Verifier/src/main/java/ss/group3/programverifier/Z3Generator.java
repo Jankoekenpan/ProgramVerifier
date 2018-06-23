@@ -1,7 +1,11 @@
 package ss.group3.programverifier;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 
 import org.antlr.v4.runtime.ANTLRFileStream;
 import org.antlr.v4.runtime.ANTLRInputStream;
@@ -18,10 +22,12 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Solver;
+import com.microsoft.z3.Status;
 
 import ss.group3.programverifier.LanguageParser.AssignStatContext;
 import ss.group3.programverifier.LanguageParser.BoolExprContext;
 import ss.group3.programverifier.LanguageParser.CompareExprContext;
+import ss.group3.programverifier.LanguageParser.ContractContext;
 import ss.group3.programverifier.LanguageParser.ContractExprContext;
 import ss.group3.programverifier.LanguageParser.DeclarationStatContext;
 import ss.group3.programverifier.LanguageParser.EqualOrNotEqualExprContext;
@@ -40,6 +46,10 @@ public class Z3Generator extends LanguageBaseListener {
 	private HashMap<String, Integer> idCount = new HashMap<>();
 
 	private ParseTreeProperty<Expr> exprs = new ParseTreeProperty<>();
+	
+	private HashMap<String, Expr> variables = new HashMap<>();
+	
+	private List<ProgramError> errors = new ArrayList<>();
 	
 	private Context context;
 	private Solver solver;
@@ -98,7 +108,7 @@ public class Z3Generator extends LanguageBaseListener {
 	
 	@Override
 	public void exitIdExpr(IdExprContext ctx) {
-		// TODO Auto-generated method stub
+		put(ctx, variables.get(ctx.ID().getText()));
 	}
 	
 	@Override
@@ -217,16 +227,17 @@ public class Z3Generator extends LanguageBaseListener {
 	
 	// statements
 	
-	private HashMap<String, Expr> variables = new HashMap<>();
-	
 	@Override
 	public void exitDeclarationStat(DeclarationStatContext ctx) {
-		IntExpr intConst = context.mkIntConst(ctx.ID().getText());
+		String id = ctx.ID().getText();
+		IntExpr intConst = context.mkIntConst(id);
+		
+		variables.put(id, intConst);
 		
 		BoolExpr expr = context.mkEq(intConst, get(ctx.expression()));
 		solver.add(expr);
 		
-		System.out.println(solver);
+//		System.out.println(solver);
 	}
 	
 	@Override
@@ -236,6 +247,35 @@ public class Z3Generator extends LanguageBaseListener {
 		// TODO: SSA renaming
 		
 		context.mkEq(expr, get(ctx.expression()));
+	}
+	
+	// contracts
+	
+	@Override
+	public void exitContract(ContractContext ctx) {
+		switch (ctx.contract_type().getText()) {
+		case "assert":
+			solver.push();
+			
+			solver.add(getBool(ctx.expression()));
+			
+			if (solver.check() == Status.SATISFIABLE) {
+				errors.add(new ProgramError(ctx, solver.getModel()));
+			}
+			
+			solver.pop();
+			break;
+		default:
+			break;
+		}
+	}
+	
+	public boolean isCorrect() {
+		return errors.isEmpty();
+	}
+	
+	public List<ProgramError> getErrors() {
+		return Collections.unmodifiableList(errors);
 	}
 	
 	public static void main(String[] args) throws IOException {

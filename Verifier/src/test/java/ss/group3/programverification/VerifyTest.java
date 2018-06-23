@@ -1,17 +1,18 @@
 package ss.group3.programverification;
 
+import java.io.IOException;
+
 import org.antlr.v4.runtime.ANTLRFileStream;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.TokenStream;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
+
 import ss.group3.programverifier.LanguageLexer;
 import ss.group3.programverifier.LanguageParser;
 import ss.group3.programverifier.LanguageProver;
 import ss.group3.programverifier.ToAstCompiler;
 import ss.group3.programverifier.ast.Program;
-
-import java.io.IOException;
 
 public class VerifyTest {
 
