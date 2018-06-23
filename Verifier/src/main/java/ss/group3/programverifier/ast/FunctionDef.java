@@ -3,6 +3,7 @@ package ss.group3.programverifier.ast;
 import ss.group3.util.Pair;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -102,5 +103,10 @@ public class FunctionDef extends ContractableStatement {
     @Override
     public String toString() {
         return "FUNCTION_DEF{identifier="+identifier+",returnType="+returnType+",parameters="+parameterPairs+",body="+body+"}";
+    }
+    
+    @Override
+    public List<AstNode> getChildren() {
+    	return Arrays.asList(body);
     }
 }

@@ -1,5 +1,8 @@
 package ss.group3.programverifier.ast;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class Minus extends Expression {
 
     private final Expression first, second;
@@ -20,6 +23,11 @@ public class Minus extends Expression {
     @Override
     public String toString() {
         return "MINUS{first=" + first + ",second=" + second + "}";
+    }
+    
+    @Override
+    public List<AstNode> getChildren() {
+    	return Arrays.asList(first, second);
     }
 
 }

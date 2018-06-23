@@ -76,9 +76,9 @@ public class Main {
         solver.add(contract2);
         status = solver.check();
         System.out.println("status = " + status);
-
+        
         solver.pop();
-
+        
         context.close();
     }
 

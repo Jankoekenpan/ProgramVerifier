@@ -1,5 +1,8 @@
 package ss.group3.programverifier.ast;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class TernaryIf extends Expression {
 
     private final Expression condition;
@@ -26,6 +29,11 @@ public class TernaryIf extends Expression {
     @Override
     public String toString() {
         return "TERNARY_IF{condition=" + condition + ",thanExpression=" + thenExpression + ",elseExpression=" + elseExpression + "}";
+    }
+    
+    @Override
+    public List<AstNode> getChildren() {
+    	return Arrays.asList(condition, thenExpression, elseExpression);
     }
 
 }

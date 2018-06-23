@@ -1,4 +1,4 @@
 package ss.group3.programverifier.ast;
 
-public class Expression extends AstNode {
+public abstract class Expression extends AstNode {
 }

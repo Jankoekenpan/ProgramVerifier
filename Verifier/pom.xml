@@ -9,9 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>ss.group3</groupId>
     <artifactId>Verifier</artifactId>
-    <version>0.1</version>
 
     <dependencies>
         <dependency>

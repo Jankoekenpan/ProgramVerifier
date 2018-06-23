@@ -1,5 +1,8 @@
 package ss.group3.programverifier.ast;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class Contract extends Statement {
 
     private ContractKind contractType;
@@ -21,5 +24,10 @@ public class Contract extends Statement {
     @Override
     public String toString() {
         return "CONTRACT{contractType="+contractType+",expression="+expression+"}";
+    }
+    
+    @Override
+    public List<AstNode> getChildren() {
+    	return Arrays.asList(expression);
     }
 }

@@ -30,4 +30,9 @@ public class FunctionCall extends Expression {
     public String toString() {
         return "FUNCTION_CALL{functionIdentifier=" + functionIdentifier + ",arguments=" + arguments + "}";
     }
+    
+    @Override
+    public List<AstNode> getChildren() {
+    	return Collections.unmodifiableList(arguments);
+    }
 }

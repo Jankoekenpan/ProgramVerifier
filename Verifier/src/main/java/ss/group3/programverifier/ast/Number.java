@@ -1,6 +1,9 @@
 package ss.group3.programverifier.ast;
 
 import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class Number extends Expression {
 
@@ -17,5 +20,10 @@ public class Number extends Expression {
     @Override
     public String toString() {
         return "NUMBER{value=" + value + "}";
+    }
+    
+    @Override
+    public List<AstNode> getChildren() {
+    	return Collections.emptyList();
     }
 }

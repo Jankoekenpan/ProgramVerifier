@@ -1,5 +1,6 @@
 package ss.group3.programverifier.ast;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -18,5 +19,10 @@ public class Block extends Statement {
     @Override
     public String toString() {
         return "BLOCK{statements="+statements+"}";
+    }
+    
+    @Override
+    public List<AstNode> getChildren() {
+    	return Collections.unmodifiableList(statements);
     }
 }

@@ -19,5 +19,9 @@ public class Program extends AstNode {
     public String toString() {
         return "PROGRAM{statements=" + contents + "}";
     }
-
+    
+    @Override
+    public List<AstNode> getChildren() {
+    	return Collections.unmodifiableList(contents);
+    }
 }

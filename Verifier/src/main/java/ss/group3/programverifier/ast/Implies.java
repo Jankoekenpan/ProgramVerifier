@@ -1,5 +1,8 @@
 package ss.group3.programverifier.ast;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class Implies extends Expression {
 
     private final Expression first, second;
@@ -20,5 +23,10 @@ public class Implies extends Expression {
     @Override
     public String toString() {
         return "IMPLIES{first=" + first + ",second=" + second + "}";
+    }
+    
+    @Override
+    public List<AstNode> getChildren() {
+    	return Arrays.asList(first, second);
     }
 }

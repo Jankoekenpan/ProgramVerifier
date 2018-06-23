@@ -1,5 +1,5 @@
 package ss.group3.programverifier.ast;
 
-public class Statement extends AstNode {
+public abstract class Statement extends AstNode {
 
 }

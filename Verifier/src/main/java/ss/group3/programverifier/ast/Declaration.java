@@ -1,5 +1,8 @@
 package ss.group3.programverifier.ast;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class Declaration extends Statement {
 
     private final Type type;
@@ -35,5 +38,10 @@ public class Declaration extends Statement {
     @Override
     public String toString() {
         return "DECLARATION{type="+type+",identifier="+identifier+",expression="+expression+"}";
+    }
+    
+    @Override
+    public List<AstNode> getChildren() {
+    	return Arrays.asList(expression);
     }
 }
