@@ -7,9 +7,10 @@ program     : statement*
 statement   : type ID (':=' expression)? ';'                                            #declarationStat
             | ID ':=' expression ';'                                                    #assignStat
             | 'if' '(' expression ')' statement ('else' statement)?                     #ifStat
-            | contract* 'while' '(' expression ')' statement                            #whileStat
+            | 'while' '(' expression ')' contract* statement                            #whileStat
             | 'return' expression? ';'                                                  #returnStat
-            | contract* return_type ID '(' (type ID)? (',' type ID)* ')' statement      #functionDefStat
+            | return_type ID '(' (type ID)? (',' type ID)* ')' contract* statement      #functionDefStat
+            | contract                                                                  #contractStat
             | '{' statement* '}'                                                        #blockStat
             ;
 
@@ -20,6 +21,7 @@ contract_type   : 'requires'
                 | 'ensures'
                 | 'invariant'
                 | 'decreases'
+                | 'assert'
                 ;
 
 type        : 'int'         #intType        //TODO decide on whether this is a bounded bitvector or a true mathematical integer (I prefer the latter)

@@ -7,28 +7,42 @@ import ss.group3.programverifier.ast.Boolean;
 import ss.group3.util.Pair;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class LanguageProver {
 
     private static final String PATH_CONDITION_IDENTIFIER = "_PATH";
 
-    private final Map<Integer, Map<String, String>> conditionsToVariablesToRenamedVariables = new HashMap<>();
+    /** Path condition counter. Incremented every time a new path condition is created. */
     private int currentPathCondition;
+    /** Maps program identifiers to their smt identifiers, given a path condition. */
+    private final Map<Integer, Map<String, String>> conditionsToVariablesToRenamedVariables = new HashMap<>();
 
-    /** The Z3 main context */
+    /** The Z3 main context. */
     private final Context context;
-    /** The Z3 solver */
+    /** The Z3 solver. */
     private final Solver solver;
 
     /** Mapping of smt identifiers to function declaration,
-     * used for program identifier evaluation of smt expressions */
-    private final Map<String, Expr> smtIdentifiers = new HashMap<>();
+     * used for program identifier evaluation of smt expressions. */
+    private final Map<String, Expr> smtExpressions = new HashMap<>();
+
+    /** Map keeps track of types of the program variables */
+    private final Map<String, Type> types = new HashMap<>();
 
     public LanguageProver() {
         this.context = new Context();
         this.solver = context.mkSolver();
+    }
+
+    private BoolExpr getPathConditionExpr(int pathCondition) {
+        String smtIdentifier = toSMTIdentifier(PATH_CONDITION_IDENTIFIER, pathCondition);
+        return (BoolExpr) smtExpressions.get(smtIdentifier);
+    }
+
+    private Expr getSmtExpr(String programIdentifier, int pathCondition) {
+        String smt = getSmtIdentifier(programIdentifier, pathCondition);
+        return smtExpressions.get(smt);
     }
 
     public boolean proveProgram(Program program) {
@@ -47,8 +61,7 @@ public class LanguageProver {
         } else if (statement instanceof Assign) {
             return proveAssign((Assign) statement, pathCondition);
         } else if (statement instanceof If) {
-            //TODO
-            return true;
+            return proveIf((If) statement, pathCondition);
         }
 
         //TODO other cases
@@ -62,7 +75,7 @@ public class LanguageProver {
 
         String smtIdentifier = getSmtIdentifier(id, pathCondition);
         Expr expr = context.mkConst(smtIdentifier, toSMTType(type));
-        smtIdentifiers.put(smtIdentifier, expr);
+        smtExpressions.put(smtIdentifier, expr);
 
         if (declaration.hasExpression()) {
             Assign assign = new Assign(id, declaration.getExpression());
@@ -75,7 +88,7 @@ public class LanguageProver {
     private BoolExpr makePathCondition(int pathCondition, Expr smtExpression) {
         String smtPathConditionIdentifier = toSMTIdentifier(PATH_CONDITION_IDENTIFIER, pathCondition);
         BoolExpr smtPathCondition = context.mkBoolConst(smtPathConditionIdentifier);
-        smtIdentifiers.put(smtPathConditionIdentifier, smtPathCondition);
+        smtExpressions.put(smtPathConditionIdentifier, smtPathCondition);
         return smtPathCondition;
     }
 
@@ -111,9 +124,15 @@ public class LanguageProver {
         String identifier = assign.getIdentifier();
         Expression expression = assign.getExpression();
 
-        String c = toSMTIdentifier(PATH_CONDITION_IDENTIFIER, pathCondition);
-        //TODO
-        //context.mkITE();
+        BoolExpr pathConditionExpr = getPathConditionExpr(pathCondition);
+
+
+        String smtIdentifier = getSmtIdentifier(identifier, pathCondition);
+        //TODO how to get the old and new smt identifier names? i can get them i. Should we convert to static single assignment first?
+        Expr assertRHS = context.mkITE(pathConditionExpr, /*new smt identifier name*/ null, /*old smt identifier name*/ null);
+
+        Expr assertLHS = getSmtExpr(identifier, pathCondition);
+        solver.add(context.mkEq(assertLHS, assertRHS));
 
         return true;
     }
@@ -150,7 +169,7 @@ public class LanguageProver {
             Identifier identifier = (Identifier) expression;
             String id = identifier.getValue();
             String smtId = getSmtIdentifier(id, pathCondition);
-            return smtIdentifiers.get(smtId);
+            return smtExpressions.get(smtId);
         } else if (expression instanceof GreaterThan) {
             GreaterThan greaterThan = (GreaterThan) expression;
             return context.mkGt(

@@ -1,6 +1,7 @@
+int incrementntimes(int n)
 # requires n >= 0 #
 # ensures \result == n #
-int incrementntimes(int n) {
+{
     int i := 0;
     # invariant i <= 0 && i <= n #
     # decreases n - i #
