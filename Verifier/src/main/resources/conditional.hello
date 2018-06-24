@@ -1,0 +1,35 @@
+int x;
+
+if (x > 3) {
+	x := 4;
+} else {
+	x := 5;
+}
+
+# assert (x == 4) || (x == 5) #
+
+int y;
+int z;
+
+if (y > 4) {
+	if (y > 5) {
+		z := 5;
+	} else {
+		z := 6;
+	}
+} else {
+	z := 7;
+	y := 4;
+}
+
+# assert (z >= 5) && (z <= 7) #
+# assert y >= 4 #
+
+int w := 4;
+int v;
+
+if (v > 3) {
+	w := 3;
+}
+
+# assert (w == 3) || (w == 4) #

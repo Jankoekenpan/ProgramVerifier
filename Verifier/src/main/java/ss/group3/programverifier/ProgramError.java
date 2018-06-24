@@ -7,10 +7,12 @@ import com.microsoft.z3.Model;
 public class ProgramError {
 	private ParseTree source;
 	private Model model;
+	private String smt;
 	
-	public ProgramError(ParseTree source, Model model) {
+	public ProgramError(ParseTree source, Model model, String smt) {
 		this.source = source;
 		this.model = model;
+		this.smt = smt;
 	}
 	
 	public ParseTree getSource() {
@@ -19,5 +21,9 @@ public class ProgramError {
 	
 	public Model getModel() {
 		return model;
+	}
+	
+	public String getSmt() {
+		return smt;
 	}
 }

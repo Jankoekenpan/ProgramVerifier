@@ -1,3 +1,8 @@
 int x := (3 + 1) * 2;
 # assert x == 8 #
 # assert x == 4 + 4 #
+# assert x == 7 # // should fail
+
+x := x + 3;
+
+# assert x == 11 #

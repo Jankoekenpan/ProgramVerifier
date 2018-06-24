@@ -1,266 +1,297 @@
 package ss.group3.programverifier;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
 
-import org.antlr.v4.runtime.ANTLRFileStream;
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.antlr.v4.runtime.tree.ParseTreeProperty;
-import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
-import com.microsoft.z3.ArithExpr;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
-import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Solver;
 import com.microsoft.z3.Status;
 
 import ss.group3.programverifier.LanguageParser.AssignStatContext;
-import ss.group3.programverifier.LanguageParser.BoolExprContext;
-import ss.group3.programverifier.LanguageParser.CompareExprContext;
 import ss.group3.programverifier.LanguageParser.ContractContext;
-import ss.group3.programverifier.LanguageParser.ContractExprContext;
 import ss.group3.programverifier.LanguageParser.DeclarationStatContext;
-import ss.group3.programverifier.LanguageParser.EqualOrNotEqualExprContext;
-import ss.group3.programverifier.LanguageParser.FunctionCallExprContext;
-import ss.group3.programverifier.LanguageParser.IdExprContext;
-import ss.group3.programverifier.LanguageParser.LogicBinOpExprContext;
-import ss.group3.programverifier.LanguageParser.NotExprContext;
-import ss.group3.programverifier.LanguageParser.NumExprContext;
-import ss.group3.programverifier.LanguageParser.ParExprContext;
-import ss.group3.programverifier.LanguageParser.PlusOrMinusExprContext;
-import ss.group3.programverifier.LanguageParser.TernaryIfExprContext;
-import ss.group3.programverifier.LanguageParser.TimesOrDivideExprContext;
-import ss.group3.programverifier.LanguageParser.UnaryMinusExprContext;
+import ss.group3.programverifier.LanguageParser.IfStatContext;
+import ss.group3.programverifier.LanguageParser.ProgramContext;
 
-public class Z3Generator extends LanguageBaseListener {
+/**
+ * Traverses the AST and generates the SMT statements.
+ */
+public class Z3Generator extends LanguageBaseVisitor<Void> {
+	/**
+	 * A map from variable id to a counter, which is incremented with every assignment.
+	 */
 	private HashMap<String, Integer> idCount = new HashMap<>();
-
-	private ParseTreeProperty<Expr> exprs = new ParseTreeProperty<>();
 	
-	private HashMap<String, Expr> variables = new HashMap<>();
+	/**
+	 * map variable id to its type.
+	 */
+	private HashMap<String, String> types = new HashMap<>();
+	
+	/**
+	 * Used to keep track of what scope and what path condition holds during traversal.
+	 */
+	private Stack<Scope> scopeStack = new Stack<>();
+	
+	/**
+	 * A counter that is incremented with every new path condition.
+	 */
+	private int conditionCount = 0;
 	
 	private List<ProgramError> errors = new ArrayList<>();
 	
-	private Context context;
+	private Context c;
 	private Solver solver;
+
+	private Z3ExpressionParser expressionParser;
 	
 	public Z3Generator() {
-		context = new Context();
-		solver = context.mkSolver();
-	}
-	
-	private void put(ParseTree ctx, Expr expr) {
-		exprs.put(ctx, expr);
-	}
-	
-	// helper functions
-	
-	private Expr get(ParseTree ctx) {
-		return exprs.get(ctx);
-	}
-	
-	private ArithExpr getArith(ParseTree ctx) {
-		Expr expr = exprs.get(ctx);
-		if (expr instanceof ArithExpr) {
-			return (ArithExpr) expr;
-		} else {
-			return null;
-		}
-	}
-	
-	private BoolExpr getBool(ParseTree ctx) {
-		Expr expr = exprs.get(ctx);
-		if (expr instanceof BoolExpr) {
-			return (BoolExpr) expr;
-		} else {
-			return null;
-		}
-	}
-	
-	// Expressions
-	
-	@Override
-	public void exitParExpr(ParExprContext ctx) {
-		put(ctx, get(ctx.expression()));
-	}
-	
-	@Override
-	public void exitNumExpr(NumExprContext ctx) {
-		String num = ctx.getText();
-		put(ctx, context.mkInt(num));
-	}
-	
-	@Override
-	public void exitBoolExpr(BoolExprContext ctx) {
-		String val = ctx.getText();
-		put(ctx, context.mkBool("true".equals(val) ? true : false));
-	}
-	
-	@Override
-	public void exitIdExpr(IdExprContext ctx) {
-		put(ctx, variables.get(ctx.ID().getText()));
-	}
-	
-	@Override
-	public void exitUnaryMinusExpr(UnaryMinusExprContext ctx) {
-		ArithExpr unaryMinus = context.mkUnaryMinus(getArith(ctx.expression()));
-		put(ctx, unaryMinus);
-	}
-	
-	@Override
-	public void exitNotExpr(NotExprContext ctx) {
-		BoolExpr not = context.mkNot(getBool(ctx.expression()));
-		put(ctx, not);
-	}
-	
-	@Override
-	public void exitTimesOrDivideExpr(TimesOrDivideExprContext ctx) {
-		ArithExpr c1 = getArith(ctx.expression(0));
-		ArithExpr c2 = getArith(ctx.expression(1));
-
-		ArithExpr expr = "*".equals(ctx.getChild(1).getText()) ? context.mkMul(c1, c2) : context.mkDiv(c1, c2);
-
-		put(ctx, expr);
-	}
-	
-	@Override
-	public void exitPlusOrMinusExpr(PlusOrMinusExprContext ctx) {
-		ArithExpr c1 = getArith(ctx.expression(0));
-		ArithExpr c2 = getArith(ctx.expression(1));
-
-		ArithExpr expr = "+".equals(ctx.getChild(1).getText()) ? context.mkAdd(c1, c2) : context.mkSub(c1, c2);
-
-		put(ctx, expr);
-	}
-	
-	@Override
-	public void exitCompareExpr(CompareExprContext ctx) {
-		ArithExpr c1 = getArith(ctx.expression(0));
-		ArithExpr c2 = getArith(ctx.expression(1));
-
-		BoolExpr r = null;
+		c = new Context();
+		solver = c.mkSolver();
 		
-		switch (ctx.getChild(1).getText()) {
-		case "<":
-			r = context.mkGt(c1, c2);
-			break;
-		case ">":
-			r = context.mkLt(c1, c2);
-			break;
-		case "<=":
-			r = context.mkGe(c1, c2);
-			break;
-		case ">=":
-			r = context.mkLe(c1, c2);
-			break;
+		expressionParser = new Z3ExpressionParser(this, c);
+	}
+	
+	private Expr expr(ParseTree ctx) {
+		return expressionParser.visit(ctx);
+	}
+	
+	/**
+	 * Creates a Z3 const based on a type.
+	 */
+	private Expr makeConst(String id, String type) {
+		switch (type) {
+		case "int":
+			return c.mkIntConst(id);
+		case "bool":
+			return c.mkBoolConst(id);
 		default:
-			break;
+			throw new RuntimeException("Unknown type " + type);
+		}
+	}
+	
+	private BoolExpr newPathCond() {
+		String id = "$c$" + conditionCount++;
+		return c.mkBoolConst(id);
+	}
+	
+	/**
+	 * @return The current path condition.
+	 */
+	private BoolExpr currentCond() {
+		return scopeStack.peek().pathCondition;
+	}
+	
+	/**
+	 * @return Whether the given variable id is already declared.
+	 */
+	private boolean isVarDeclared(String id) {
+		for (Scope scope : scopeStack) {
+			if (scope.renaming.containsKey(id)) {
+				return true;
+			}
 		}
 		
-		put(ctx, r);
+		return false;
 	}
 	
-	@Override
-	public void exitEqualOrNotEqualExpr(EqualOrNotEqualExprContext ctx) {
-		// equality can be with both arith and bool expressions
-		Expr c1 = get(ctx.expression(0));
-		Expr c2 = get(ctx.expression(1));
-
-		BoolExpr expr = "+".equals(ctx.getChild(1).getText()) ? context.mkEq(c1, c2) : context.mkNot(context.mkEq(c1, c2));
-
-		put(ctx, expr);
-	}
-	
-	@Override
-	public void exitLogicBinOpExpr(LogicBinOpExprContext ctx) {
-		BoolExpr c1 = getBool(ctx.expression(0));
-		BoolExpr c2 = getBool(ctx.expression(1));
-
-		BoolExpr r = null;
-		
-		switch (ctx.getChild(1).getText()) {
-		case "&&":
-			r = context.mkAnd(c1, c2);
-			break;
-		case "||":
-			r = context.mkOr(c1, c2);
-			break;
-		case "=>":
-			r = context.mkImplies(c1, c2);
-			break;
-		default:
-			break;
+	/**
+	 * @return An expression corresponding to the current assignment of the given variable.
+	 */
+	Expr getVar(String id) {
+		for (Scope scope : scopeStack) {
+			if (scope.renaming.containsKey(id)) {
+				return scope.renaming.get(id);
+			}
 		}
 		
-		put(ctx, r);
+		throw new IllegalArgumentException(String.format("Variable \"%s\" not in scope", id));
 	}
 	
-	@Override
-	public void exitTernaryIfExpr(TernaryIfExprContext ctx) {
-		BoolExpr c1 = getBool(ctx.expression(0));
-		Expr c2 = get(ctx.expression(1));
-		Expr c3 = get(ctx.expression(2));
+	/**
+	 * Generates and registers a new Z3 const of the given variable.
+	 */
+	private Expr newVar(String id) {
+		int count = idCount.getOrDefault(id, 1);
+		String newId = id + "$" + count;
 		
-		put(ctx, context.mkITE(c1, c2, c3));
-	}
-	
-	@Override
-	public void exitFunctionCallExpr(FunctionCallExprContext ctx) {
-		// TODO Auto-generated method stub
-	}
-	
-	@Override
-	public void exitContractExpr(ContractExprContext ctx) {
-		// TODO Auto-generated method stub
-		super.enterContractExpr(ctx);
+		Expr newConst = makeConst(newId, types.get(id));
+		
+		idCount.put(id, count + 1);
+		
+		scopeStack.peek().renaming.put(id, newConst);
+		
+		return newConst;
 	}
 	
 	// statements
 	
 	@Override
-	public void exitDeclarationStat(DeclarationStatContext ctx) {
+	public Void visitDeclarationStat(DeclarationStatContext ctx) {
 		String id = ctx.ID().getText();
-		IntExpr intConst = context.mkIntConst(id);
+		String type = ctx.type().getText();
 		
-		variables.put(id, intConst);
+		// the fist counter value is 0, the $ symbol is used because it is not in the grammar, guaranteeing no 
+		// collisions.
+		Expr constExpr = makeConst(id + "$0", type);
 		
-		BoolExpr expr = context.mkEq(intConst, get(ctx.expression()));
-		solver.add(expr);
+		if (isVarDeclared(id)) {
+			// TODO: scopes?
+			throw new RuntimeException("Duplicate variable " + id);
+		}
 		
-//		System.out.println(solver);
+		types.put(id, type);
+		scopeStack.peek().renaming.put(id, constExpr);
+		
+		// assignment is optional
+		if(ctx.expression() != null) {
+			BoolExpr expr = c.mkEq(constExpr, expr(ctx.expression()));
+			solver.add(expr);
+		}
+		
+		return null;
 	}
 	
 	@Override
-	public void exitAssignStat(AssignStatContext ctx) {
-		Expr expr = variables.get(ctx.ID().getText());
+	public Void visitAssignStat(AssignStatContext ctx) {
+		String id = ctx.ID().getText();
 		
-		// TODO: SSA renaming
+		// TODO: not sure if it's needed to set it to the old value if the path condition does not hold.
+		Expr prevConst = getVar(id);
+		Expr newConst = newVar(id);
 		
-		context.mkEq(expr, get(ctx.expression()));
+		BoolExpr eq = c.mkEq(newConst, c.mkITE(currentCond(), expr(ctx.expression()), prevConst));
+		solver.add(eq);
+		
+		return null;
+	}
+	
+	/**
+	 * @return The set of variable id's that are changed in the scope of the branch, compared to the current scope.
+	 */
+	private Set<String> getChangedVars(Scope branch, Scope curScope) {
+		HashSet<String> result = new HashSet<>();
+		
+		for (String var : branch.renaming.keySet()) {
+			if (curScope.renaming.containsKey(var)) {
+				boolean trueChanged = curScope.renaming.get(var) != branch.renaming.get(var);
+				if (trueChanged) {
+					result.add(var);
+				}
+			}
+		}
+		
+		return result;
+	}
+	
+	@Override
+	public Void visitIfStat(IfStatContext ctx) {
+		BoolExpr condition = (BoolExpr) expr(ctx.expression());
+		
+		BoolExpr trueCond = newPathCond();
+		BoolExpr falseCond = newPathCond();
+
+		solver.add(c.mkEq(trueCond, c.mkAnd(currentCond(), condition)));
+		solver.add(c.mkEq(falseCond, c.mkAnd(currentCond(), c.mkNot(trueCond))));
+
+		Scope curScope = scopeStack.peek();
+		
+		Scope trueScope = new Scope(trueCond);
+		trueScope.renaming.putAll(curScope.renaming);
+		
+		Scope falseScope = new Scope(falseCond);
+		falseScope.renaming.putAll(curScope.renaming);
+		
+		scopeStack.push(trueScope);
+		visit(ctx.statement(0));
+		scopeStack.pop();
+		
+		if(ctx.statement().size() > 1) {
+			scopeStack.push(falseScope);
+			visit(ctx.statement(1));
+			scopeStack.pop();
+		}
+		
+		// update path condition
+		
+		BoolExpr pathCond = newPathCond();
+		solver.add(c.mkEq(pathCond, c.mkOr(trueScope.pathCondition, falseScope.pathCondition)));
+		curScope.pathCondition = pathCond;
+		
+		// put updated variables in current scope
+
+		Set<String> trueVars = getChangedVars(trueScope, curScope);
+		Set<String> falseVars = getChangedVars(falseScope, curScope);
+		Set<String> curVars = curScope.renaming.keySet();
+		
+		// all variables that are changed in both the if and else branch
+		Set<String> union = new HashSet<>();
+		union.addAll(trueVars);
+		union.retainAll(falseVars);
+		
+		// all variables that are changed in either the if or the else branch
+		Set<String> diff = new HashSet<>();
+		diff.addAll(trueVars);
+		diff.addAll(falseVars);
+		diff.removeAll(union);
+
+		System.out.println(ctx.expression().getText());
+		System.out.println("Cur vars: " + String.join(", ", curVars));
+		System.out.println("Union vars: " + String.join(", ", union));
+		System.out.println("Diff vars: " + String.join(", ", diff));
+		
+		// create new variable and set it equal to the values of the branches depending on the path conditions.
+		for(String var : union) {
+			Expr trueVar = trueScope.renaming.get(var);
+			Expr falseVar = falseScope.renaming.get(var);
+			Expr defaultVar = curScope.renaming.get(var);
+			
+			Expr e = c.mkITE(trueScope.pathCondition, trueVar, c.mkITE(falseScope.pathCondition, falseVar, defaultVar));
+			solver.add(c.mkEq(newVar(var), e));
+		}
+		
+		for(String var : diff) {
+			Expr e;
+			Expr defaultVar = curScope.renaming.get(var);
+			BoolExpr cond;
+			
+			if(trueVars.contains(var)) {
+				e = trueScope.renaming.get(var);
+				cond = trueScope.pathCondition;
+			} else if(falseVars.contains(var)) {
+				e = falseScope.renaming.get(var);
+				cond = falseScope.pathCondition;
+			} else {
+				throw new RuntimeException(String.format("Variable \"%s\" not found in previous scopes", var));
+			}
+			
+			solver.add(c.mkEq(newVar(var), c.mkITE(cond, e, defaultVar)));
+		}
+		
+		return null;
 	}
 	
 	// contracts
 	
 	@Override
-	public void exitContract(ContractContext ctx) {
+	public Void visitContract(ContractContext ctx) {
 		switch (ctx.contract_type().getText()) {
 		case "assert":
 			solver.push();
 			
-			solver.add(getBool(ctx.expression()));
+			solver.add(c.mkNot((BoolExpr) expr(ctx.expression())));
 			
 			if (solver.check() == Status.SATISFIABLE) {
-				errors.add(new ProgramError(ctx, solver.getModel()));
+				errors.add(new ProgramError(ctx, solver.getModel(), solver.toString()));
 			}
 			
 			solver.pop();
@@ -268,7 +299,27 @@ public class Z3Generator extends LanguageBaseListener {
 		default:
 			break;
 		}
+		
+		return null;
 	}
+	
+	// program
+	
+	@Override
+	public Void visitProgram(ProgramContext ctx) {
+		// base scope, path condition set to true
+		BoolExpr cond = newPathCond();
+		solver.add(c.mkEq(c.mkTrue(), cond));
+		scopeStack.push(new Scope(cond));
+		
+		super.visitProgram(ctx);
+		
+		System.out.println(solver);
+		
+		return null;
+	}
+	
+	// public interface
 	
 	public boolean isCorrect() {
 		return errors.isEmpty();
@@ -278,16 +329,16 @@ public class Z3Generator extends LanguageBaseListener {
 		return Collections.unmodifiableList(errors);
 	}
 	
-	public static void main(String[] args) throws IOException {
-		CharStream input = new ANTLRFileStream("src/main/resources/assign.hello");
-		LanguageLexer lexer = new LanguageLexer(input);
-		TokenStream stream = new CommonTokenStream(lexer);
-		LanguageParser parser = new LanguageParser(stream);
-
-		//parse tree
-		LanguageParser.ProgramContext programTree = parser.program();
+	private class Scope {
+		BoolExpr pathCondition;
 		
-		Z3Generator generator = new Z3Generator();
-		new ParseTreeWalker().walk(generator, programTree);
+		/**
+		 * map variable id to SSA valid z3 expression
+		 */
+		Map<String, Expr> renaming = new HashMap<>();
+		
+		Scope(BoolExpr pathCondition) {
+			this.pathCondition = pathCondition;
+		}
 	}
 }
