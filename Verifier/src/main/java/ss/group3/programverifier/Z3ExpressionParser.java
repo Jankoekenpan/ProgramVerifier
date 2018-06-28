@@ -7,7 +7,6 @@ import com.microsoft.z3.Expr;
 
 import ss.group3.programverifier.LanguageParser.BoolExprContext;
 import ss.group3.programverifier.LanguageParser.CompareExprContext;
-import ss.group3.programverifier.LanguageParser.ContractExprContext;
 import ss.group3.programverifier.LanguageParser.EqualOrNotEqualExprContext;
 import ss.group3.programverifier.LanguageParser.FunctionCallExprContext;
 import ss.group3.programverifier.LanguageParser.IdExprContext;
@@ -16,6 +15,7 @@ import ss.group3.programverifier.LanguageParser.NotExprContext;
 import ss.group3.programverifier.LanguageParser.NumExprContext;
 import ss.group3.programverifier.LanguageParser.ParExprContext;
 import ss.group3.programverifier.LanguageParser.PlusOrMinusExprContext;
+import ss.group3.programverifier.LanguageParser.ResultContrExprContext;
 import ss.group3.programverifier.LanguageParser.TernaryIfExprContext;
 import ss.group3.programverifier.LanguageParser.TimesOrDivideExprContext;
 import ss.group3.programverifier.LanguageParser.UnaryMinusExprContext;
@@ -49,7 +49,7 @@ public class Z3ExpressionParser extends LanguageBaseVisitor<Expr> {
 	
 	@Override
 	public Expr visitIdExpr(IdExprContext ctx) {
-		return generator.getVar(ctx.ID().getText());
+		return generator.getVar(generator.getId(ctx.ID()));
 	}
 	
 	@Override
@@ -145,13 +145,17 @@ public class Z3ExpressionParser extends LanguageBaseVisitor<Expr> {
 	
 	@Override
 	public Expr visitFunctionCallExpr(FunctionCallExprContext ctx) {
-		// TODO Auto-generated method stub
-		return null;
+		return generator.genFunctionCallExpr(ctx);
 	}
 	
+//	@Override
+//	public Expr visitContractExpr(ContractExprContext ctx) {
+//		// TODO Auto-generated method stub
+//		return null;
+//	}
+	
 	@Override
-	public Expr visitContractExpr(ContractExprContext ctx) {
-		// TODO Auto-generated method stub
-		return null;
+	public Expr visitResultContrExpr(ResultContrExprContext ctx) {
+		return generator.getReturnVar();
 	}
 }

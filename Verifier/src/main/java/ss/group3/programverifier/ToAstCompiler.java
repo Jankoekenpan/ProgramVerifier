@@ -1,13 +1,48 @@
 package ss.group3.programverifier;
 
-import org.antlr.v4.runtime.tree.TerminalNode;
-import ss.group3.programverifier.ast.*;
-import ss.group3.programverifier.ast.Boolean;
-import ss.group3.programverifier.ast.Number;
-
 import java.math.BigInteger;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.antlr.v4.runtime.tree.TerminalNode;
+
+import ss.group3.programverifier.ast.And;
+import ss.group3.programverifier.ast.Assign;
+import ss.group3.programverifier.ast.AstNode;
+import ss.group3.programverifier.ast.Block;
+import ss.group3.programverifier.ast.Boolean;
+import ss.group3.programverifier.ast.Contract;
+import ss.group3.programverifier.ast.ContractExpression;
+import ss.group3.programverifier.ast.ContractKind;
+import ss.group3.programverifier.ast.Declaration;
+import ss.group3.programverifier.ast.Divide;
+import ss.group3.programverifier.ast.Equals;
+import ss.group3.programverifier.ast.Expression;
+import ss.group3.programverifier.ast.FunctionCall;
+import ss.group3.programverifier.ast.FunctionDef;
+import ss.group3.programverifier.ast.GreaterThan;
+import ss.group3.programverifier.ast.GreaterThanOrEqual;
+import ss.group3.programverifier.ast.Identifier;
+import ss.group3.programverifier.ast.If;
+import ss.group3.programverifier.ast.Implies;
+import ss.group3.programverifier.ast.LessThan;
+import ss.group3.programverifier.ast.LessThanOrEqual;
+import ss.group3.programverifier.ast.Minus;
+import ss.group3.programverifier.ast.Not;
+import ss.group3.programverifier.ast.NotEquals;
+import ss.group3.programverifier.ast.Number;
+import ss.group3.programverifier.ast.Old;
+import ss.group3.programverifier.ast.Or;
+import ss.group3.programverifier.ast.Plus;
+import ss.group3.programverifier.ast.Program;
+import ss.group3.programverifier.ast.Result;
+import ss.group3.programverifier.ast.Return;
+import ss.group3.programverifier.ast.Statement;
+import ss.group3.programverifier.ast.TernaryIf;
+import ss.group3.programverifier.ast.Times;
+import ss.group3.programverifier.ast.Type;
+import ss.group3.programverifier.ast.UnaryMinus;
+import ss.group3.programverifier.ast.While;
 
 public class ToAstCompiler extends LanguageBaseVisitor<AstNode> {
 
@@ -69,11 +104,13 @@ public class ToAstCompiler extends LanguageBaseVisitor<AstNode> {
     @Override
     public FunctionDef visitFunctionDefStat(LanguageParser.FunctionDefStatContext context) {
         Type returnType = Type.getByName(context.return_type().getText());
-        String identifier = context.ID(0).getText();
-        List<TerminalNode> ids = context.ID();
-        ids = ids.subList(1, ids.size());
-        List<String> parameterIds = ids.stream().map(TerminalNode::getText).collect(Collectors.toList());
-        List<Type> parameterTypes = context.type().stream()
+        String identifier = context.ID().getText();
+        List<String> parameterIds = context.parameter().stream()
+        		.map(LanguageParser.ParameterContext::ID)
+        		.map(TerminalNode::getText)
+        		.collect(Collectors.toList());
+        List<Type> parameterTypes = context.parameter().stream()
+        		.map(LanguageParser.ParameterContext::type)
                 .map(LanguageParser.TypeContext::getText)
                 .map(Type::getByName)
                 .collect(Collectors.toList());

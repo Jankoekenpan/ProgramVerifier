@@ -1,0 +1,19 @@
+int max(int x, int y)
+# requires y > 0 #
+# ensures (x >= y) => (\result == x) #
+# ensures (y >= x) => (\result == y) #
+{
+	# assert y > 0 #
+
+	int result;
+	if (x > y) {
+		return x;
+	} else {
+		return y;
+	}
+}
+
+int r := max(1, 1);
+int s := max(1, 0); // should fail, doesn't pass requires contract
+
+# assert max(1,2) == 2 #

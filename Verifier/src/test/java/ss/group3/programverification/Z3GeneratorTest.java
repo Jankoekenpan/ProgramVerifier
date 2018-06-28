@@ -10,6 +10,7 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.TokenStream;
+import org.junit.Assert;
 import org.junit.Test;
 
 import ss.group3.programverifier.LanguageLexer;
@@ -18,6 +19,11 @@ import ss.group3.programverifier.ProgramError;
 import ss.group3.programverifier.Z3Generator;
 
 public class Z3GeneratorTest {
+	/**
+	 * Asserts that only expected errors are found.
+	 * @param fileName Path to a parseable language file.
+	 * @param expectedLines List of line numbers where errors are supposed to happen.
+	 */
 	private void checkFile(String fileName, Integer... expectedLines) {
 		CharStream input;
 		try {
@@ -29,7 +35,10 @@ public class Z3GeneratorTest {
 		LanguageLexer lexer = new LanguageLexer(input);
 		TokenStream stream = new CommonTokenStream(lexer);
 		LanguageParser parser = new LanguageParser(stream);
-
+		
+		// check for syntax errors
+		Assert.assertEquals(0, parser.getNumberOfSyntaxErrors());
+		
 		//parse tree
 		LanguageParser.ProgramContext programTree = parser.program();
 		
@@ -59,7 +68,7 @@ public class Z3GeneratorTest {
 		for (Integer line : expected) {
 			System.out.printf("Expected error on line %s, got none\n", line);
 		}
-
+		
 		assertTrue(expected.isEmpty());
 		assertTrue(unexpected.isEmpty());
 	}
@@ -72,5 +81,10 @@ public class Z3GeneratorTest {
 	@Test
 	public void testConditional() {
 		checkFile("src/main/resources/conditional.hello");
+	}
+	
+	@Test
+	public void testFunction() {
+		checkFile("src/main/resources/function.hello", 17);
 	}
 }

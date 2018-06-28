@@ -9,7 +9,7 @@ statement   : type ID (':=' expression)? ';'                                    
             | 'if' '(' expression ')' statement ('else' statement)?                     #ifStat
             | 'while' '(' expression ')' contract* statement                            #whileStat
             | 'return' expression? ';'                                                  #returnStat
-            | return_type ID '(' (type ID)? (',' type ID)* ')' contract* statement      #functionDefStat
+            | return_type ID '(' parameter? (',' parameter)* ')' contract* statement    #functionDefStat
             | contract                                                                  #contractStat
             | '{' statement* '}'                                                        #blockStat
             ;
@@ -31,6 +31,8 @@ type        : 'int'         #intType        //TODO decide on whether this is a b
 return_type : 'void'        #voidReturnType
             | type          #normalReturnType
             ;
+
+parameter: type ID;
 
 expression  : '(' expression ')'                                        #parExpr
             | NUM                                                       #numExpr

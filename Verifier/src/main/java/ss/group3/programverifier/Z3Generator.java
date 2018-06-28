@@ -8,8 +8,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
+import java.util.stream.Collectors;
 
+import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -19,9 +22,15 @@ import com.microsoft.z3.Status;
 
 import ss.group3.programverifier.LanguageParser.AssignStatContext;
 import ss.group3.programverifier.LanguageParser.ContractContext;
+import ss.group3.programverifier.LanguageParser.ContractStatContext;
 import ss.group3.programverifier.LanguageParser.DeclarationStatContext;
+import ss.group3.programverifier.LanguageParser.ExpressionContext;
+import ss.group3.programverifier.LanguageParser.FunctionCallExprContext;
+import ss.group3.programverifier.LanguageParser.FunctionDefStatContext;
 import ss.group3.programverifier.LanguageParser.IfStatContext;
+import ss.group3.programverifier.LanguageParser.ParameterContext;
 import ss.group3.programverifier.LanguageParser.ProgramContext;
+import ss.group3.programverifier.LanguageParser.ReturnStatContext;
 
 /**
  * Traverses the AST and generates the SMT statements.
@@ -33,11 +42,6 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 	private HashMap<String, Integer> idCount = new HashMap<>();
 	
 	/**
-	 * map variable id to its type.
-	 */
-	private HashMap<String, String> types = new HashMap<>();
-	
-	/**
 	 * Used to keep track of what scope and what path condition holds during traversal.
 	 */
 	private Stack<Scope> scopeStack = new Stack<>();
@@ -46,6 +50,13 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 	 * A counter that is incremented with every new path condition.
 	 */
 	private int conditionCount = 0;
+	
+	/**
+	 * Incremented with every function call for unique names.
+	 */
+	private int callCount = 0;
+	
+	private Map<String, FunctionDefStatContext> functions;
 	
 	private List<ProgramError> errors = new ArrayList<>();
 	
@@ -88,7 +99,7 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 	 * @return The current path condition.
 	 */
 	private BoolExpr currentCond() {
-		return scopeStack.peek().pathCondition;
+		return curScope().pathCondition;
 	}
 	
 	/**
@@ -96,7 +107,7 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 	 */
 	private boolean isVarDeclared(String id) {
 		for (Scope scope : scopeStack) {
-			if (scope.renaming.containsKey(id)) {
+			if (scope.variables.containsKey(id)) {
 				return true;
 			}
 		}
@@ -105,52 +116,94 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 	}
 	
 	/**
+	 * @return The text of the given identifier with either "main" or the id
+	 * of the function the identifier is in prefixed. This prevents duplicate
+	 * variable names.
+	 */
+	String getId(TerminalNode ctx) {
+		ParseTree c = ctx;
+		while (c != null && !(c instanceof FunctionDefStatContext)) {
+			c = c.getParent();
+		}
+		
+		String prefix = c == null ? "main" : ((FunctionDefStatContext) c).ID().getText();
+		return prefix + "." + ctx.getText();
+	}
+	
+	/**
 	 * @return An expression corresponding to the current assignment of the given variable.
 	 */
 	Expr getVar(String id) {
-		for (Scope scope : scopeStack) {
-			if (scope.renaming.containsKey(id)) {
-				return scope.renaming.get(id);
-			}
+		Scope scope = curScope();
+		if (scope.variables.containsKey(id)) {
+			return scope.variables.get(id);
 		}
 		
+		scope.variables.keySet().forEach(v -> {
+			System.out.println(v);
+		});
 		throw new IllegalArgumentException(String.format("Variable \"%s\" not in scope", id));
+	}
+	
+	Expr getReturnVar() {
+		return curScope().returnVariable;
+	}
+
+	private Scope curScope() {
+		return scopeStack.peek();
 	}
 	
 	/**
 	 * Generates and registers a new Z3 const of the given variable.
 	 */
 	private Expr newVar(String id) {
-		int count = idCount.getOrDefault(id, 1);
+		int count = idCount.get(id);
 		String newId = id + "$" + count;
 		
-		Expr newConst = makeConst(newId, types.get(id));
+		Expr newConst = makeConst(newId, curScope().types.get(id));
 		
 		idCount.put(id, count + 1);
 		
-		scopeStack.peek().renaming.put(id, newConst);
+		curScope().variables.put(id, newConst);
 		
 		return newConst;
 	}
 	
-	// statements
-	
-	@Override
-	public Void visitDeclarationStat(DeclarationStatContext ctx) {
-		String id = ctx.ID().getText();
-		String type = ctx.type().getText();
-		
+	private Expr declareVar(String id, String type) {
 		// the fist counter value is 0, the $ symbol is used because it is not in the grammar, guaranteeing no 
 		// collisions.
-		Expr constExpr = makeConst(id + "$0", type);
+		int count = idCount.getOrDefault(id, 0);
+		idCount.put(id, count + 1);
+		Expr constExpr = makeConst(id + "$" + count, type);
 		
 		if (isVarDeclared(id)) {
 			// TODO: scopes?
 			throw new RuntimeException("Duplicate variable " + id);
 		}
 		
-		types.put(id, type);
-		scopeStack.peek().renaming.put(id, constExpr);
+		curScope().types.put(id, type);
+		curScope().variables.put(id, constExpr);
+		
+		return constExpr;
+	}
+	
+	private void checkExpression(BoolExpr expr, RuleContext ctx) {
+		solver.push();
+		
+		solver.add(c.mkNot(expr));
+		
+		if (solver.check() == Status.SATISFIABLE) {
+			errors.add(new ProgramError(ctx, solver.getModel(), solver.toString()));
+		}
+		
+		solver.pop();
+	}
+	
+	// statements
+	
+	@Override
+	public Void visitDeclarationStat(DeclarationStatContext ctx) {
+		Expr constExpr = declareVar(getId(ctx.ID()), ctx.type().getText());
 		
 		// assignment is optional
 		if(ctx.expression() != null) {
@@ -163,27 +216,38 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 	
 	@Override
 	public Void visitAssignStat(AssignStatContext ctx) {
-		String id = ctx.ID().getText();
+		String id = getId(ctx.ID());
 		
 		// TODO: not sure if it's needed to set it to the old value if the path condition does not hold.
-		Expr prevConst = getVar(id);
+//		Expr prevConst = getVar(id);
 		Expr newConst = newVar(id);
-		
-		BoolExpr eq = c.mkEq(newConst, c.mkITE(currentCond(), expr(ctx.expression()), prevConst));
+
+//		BoolExpr eq = c.mkEq(newConst, c.mkITE(currentCond(), expr(ctx.expression()), prevConst));
+		BoolExpr eq = c.mkEq(newConst, expr(ctx.expression()));
 		solver.add(eq);
 		
 		return null;
 	}
 	
+	@Override
+	public Void visitReturnStat(ReturnStatContext ctx) {
+		solver.add(c.mkEq(getReturnVar(), expr(ctx.expression())));
+		
+		curScope().pathCondition = c.mkFalse();
+		
+		return null;
+	}
+	
 	/**
-	 * @return The set of variable id's that are changed in the scope of the branch, compared to the current scope.
+	 * @return The set of variable id's that are changed in the scope of the 
+	 * given branch, compared to the current scope.
 	 */
 	private Set<String> getChangedVars(Scope branch, Scope curScope) {
 		HashSet<String> result = new HashSet<>();
 		
-		for (String var : branch.renaming.keySet()) {
-			if (curScope.renaming.containsKey(var)) {
-				boolean trueChanged = curScope.renaming.get(var) != branch.renaming.get(var);
+		for (String var : branch.variables.keySet()) {
+			if (curScope.variables.containsKey(var)) {
+				boolean trueChanged = curScope.variables.get(var) != branch.variables.get(var);
 				if (trueChanged) {
 					result.add(var);
 				}
@@ -203,13 +267,13 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		solver.add(c.mkEq(trueCond, c.mkAnd(currentCond(), condition)));
 		solver.add(c.mkEq(falseCond, c.mkAnd(currentCond(), c.mkNot(trueCond))));
 
-		Scope curScope = scopeStack.peek();
+		Scope curScope = curScope();
 		
-		Scope trueScope = new Scope(trueCond);
-		trueScope.renaming.putAll(curScope.renaming);
+		Scope trueScope = new Scope(curScope);
+		trueScope.pathCondition = trueCond;
 		
-		Scope falseScope = new Scope(falseCond);
-		falseScope.renaming.putAll(curScope.renaming);
+		Scope falseScope = new Scope(curScope);
+		falseScope.pathCondition = falseCond;
 		
 		scopeStack.push(trueScope);
 		visit(ctx.statement(0));
@@ -231,7 +295,7 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 
 		Set<String> trueVars = getChangedVars(trueScope, curScope);
 		Set<String> falseVars = getChangedVars(falseScope, curScope);
-		Set<String> curVars = curScope.renaming.keySet();
+//		Set<String> curVars = curScope.variables.keySet();
 		
 		// all variables that are changed in both the if and else branch
 		Set<String> union = new HashSet<>();
@@ -244,16 +308,16 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		diff.addAll(falseVars);
 		diff.removeAll(union);
 
-		System.out.println(ctx.expression().getText());
-		System.out.println("Cur vars: " + String.join(", ", curVars));
-		System.out.println("Union vars: " + String.join(", ", union));
-		System.out.println("Diff vars: " + String.join(", ", diff));
+//		System.out.println(ctx.expression().getText());
+//		System.out.println("Cur vars: " + String.join(", ", curVars));
+//		System.out.println("Union vars: " + String.join(", ", union));
+//		System.out.println("Diff vars: " + String.join(", ", diff));
 		
 		// create new variable and set it equal to the values of the branches depending on the path conditions.
 		for(String var : union) {
-			Expr trueVar = trueScope.renaming.get(var);
-			Expr falseVar = falseScope.renaming.get(var);
-			Expr defaultVar = curScope.renaming.get(var);
+			Expr trueVar = trueScope.variables.get(var);
+			Expr falseVar = falseScope.variables.get(var);
+			Expr defaultVar = curScope.variables.get(var);
 			
 			Expr e = c.mkITE(trueScope.pathCondition, trueVar, c.mkITE(falseScope.pathCondition, falseVar, defaultVar));
 			solver.add(c.mkEq(newVar(var), e));
@@ -261,14 +325,14 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		
 		for(String var : diff) {
 			Expr e;
-			Expr defaultVar = curScope.renaming.get(var);
+			Expr defaultVar = curScope.variables.get(var);
 			BoolExpr cond;
 			
 			if(trueVars.contains(var)) {
-				e = trueScope.renaming.get(var);
+				e = trueScope.variables.get(var);
 				cond = trueScope.pathCondition;
 			} else if(falseVars.contains(var)) {
-				e = falseScope.renaming.get(var);
+				e = falseScope.variables.get(var);
 				cond = falseScope.pathCondition;
 			} else {
 				throw new RuntimeException(String.format("Variable \"%s\" not found in previous scopes", var));
@@ -280,33 +344,121 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		return null;
 	}
 	
-	// contracts
-	
 	@Override
-	public Void visitContract(ContractContext ctx) {
-		switch (ctx.contract_type().getText()) {
+	public Void visitContractStat(ContractStatContext ctx) {
+		ContractContext con = ctx.contract();
+		String type = con.contract_type().getText();
+		switch (type) {
 		case "assert":
-			solver.push();
-			
-			solver.add(c.mkNot((BoolExpr) expr(ctx.expression())));
-			
-			if (solver.check() == Status.SATISFIABLE) {
-				errors.add(new ProgramError(ctx, solver.getModel(), solver.toString()));
-			}
-			
-			solver.pop();
+			checkExpression((BoolExpr) expr(con.expression()), ctx);
 			break;
 		default:
-			break;
+			throw new UnsupportedOperationException("Contract type " + type + " not supported in statements.");
 		}
 		
 		return null;
+	}
+	
+	private List<ContractContext> getRequires(FunctionDefStatContext ctx) {
+		return ctx.contract().stream()
+				.filter((c) -> c.contract_type().getText().equals("requires"))
+				.collect(Collectors.toList());
+	}
+	
+	private List<ContractContext> getEnsures(FunctionDefStatContext ctx) {
+		return ctx.contract().stream()
+				.filter((c) -> c.contract_type().getText().equals("ensures"))
+				.collect(Collectors.toList());
+	}
+	
+	@Override
+	public Void visitFunctionDefStat(FunctionDefStatContext ctx) {
+		BoolExpr pathCond = newPathCond();
+		solver.add(c.mkEq(pathCond, c.mkTrue()));
+		
+		Scope scope = new Scope(pathCond);
+		scopeStack.push(scope);
+		
+		// declare parameters in current scope
+		for (ParameterContext p : ctx.parameter()) {
+			Expr expr = declareVar(getId(p.ID()), p.type().getText());
+			scope.variables.put(getId(p.ID()), expr);
+		}
+		
+		// create return variable
+		scope.returnVariable = declareVar("$return-" + ctx.ID().getText(), ctx.return_type().getText());
+		
+		// add requires contracts
+		for (ContractContext c : getRequires(ctx)) {
+			solver.add((BoolExpr) expr(c.expression()));
+		}
+		
+		visit(ctx.statement());
+		
+		// check ensures contracts
+		
+		for (ContractContext c : getEnsures(ctx)) {
+			checkExpression((BoolExpr) expr(c.expression()), ctx);
+		}
+		
+		scopeStack.pop();
+		
+		return null;
+	}
+	
+	public Expr genFunctionCallExpr(FunctionCallExprContext ctx) {
+		String funcId = ctx.ID().getText();
+		FunctionDefStatContext func = functions.get(funcId);
+		
+		// first, check if the requires contracts hold.
+		
+		// we make temporary variables here to fill in with the arguments
+		// so we push a scope and pop it later so the rest of the program
+		// isn't affected.
+		scopeStack.push(new Scope(curScope()));
+		
+		// create argument variables
+		List<ParameterContext> parameters = func.parameter();
+		for (int i = 0; i < parameters.size() || i < ctx.expression().size(); i++) {
+			ParameterContext p = parameters.get(i);
+			ExpressionContext e = ctx.expression(i);
+			
+			String id = getId(p.ID());
+			Expr argVar = makeConst("$p" + callCount + "$" + id, p.type().getText());
+			curScope().variables.put(id, argVar);
+			solver.add(c.mkEq(argVar, expr(e)));
+		}
+		
+		for (ContractContext c : getRequires(func)) {
+			checkExpression((BoolExpr) expr(c.expression()), ctx);
+		}
+		
+		
+		// create result variable
+		Expr result = declareVar("$result-" + funcId + callCount, func.return_type().getText());
+		curScope().returnVariable = result;
+		
+		// fill in ensures
+		for (ContractContext c : getEnsures(func)) {
+			solver.add((BoolExpr) expr(c.expression()));
+		}
+		
+		scopeStack.pop();
+		
+		callCount++;
+		
+		return result;
 	}
 	
 	// program
 	
 	@Override
 	public Void visitProgram(ProgramContext ctx) {
+		// find all declared functions
+		FunctionFinder finder = new FunctionFinder();
+		finder.visit(ctx);
+		functions = finder.getFunctions();
+		
 		// base scope, path condition set to true
 		BoolExpr cond = newPathCond();
 		solver.add(c.mkEq(c.mkTrue(), cond));
@@ -329,16 +481,35 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		return Collections.unmodifiableList(errors);
 	}
 	
+	/**
+	 * Class representing a scope of the program. A scope is added to the 
+	 * scope stack with every block statement, if statement, function 
+	 * definition etc.
+	 */
 	private class Scope {
 		BoolExpr pathCondition;
 		
 		/**
-		 * map variable id to SSA valid z3 expression
+		 * All variables in the current scope. Maps variable id to SSA valid z3 expression.
 		 */
-		Map<String, Expr> renaming = new HashMap<>();
+		Map<String, Expr> variables = new HashMap<>();
+		
+		/**
+		 * map variable id to its type.
+		 */
+		private HashMap<String, String> types = new HashMap<>();
+		
+		private Expr returnVariable;
 		
 		Scope(BoolExpr pathCondition) {
 			this.pathCondition = pathCondition;
+		}
+		
+		Scope(Scope lower) {
+			this.pathCondition = lower.pathCondition;
+			this.returnVariable = lower.returnVariable;
+			variables.putAll(lower.variables);
+			types.putAll(lower.types);
 		}
 	}
 }
