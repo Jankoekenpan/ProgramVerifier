@@ -17,3 +17,24 @@ int r := max(1, 1);
 int s := max(1, 0); // should fail, doesn't pass requires contract
 
 # assert max(1,2) == 2 #
+
+int checkassert () {
+	return 1;
+	# assert false # // won't trigger because it's unreachable code
+}
+
+int mul(int x, int y) 
+# requires x >= 0 # 
+# requires y >= 0 # 
+# ensures \result == x * y # 
+# decreases x #
+{
+	if (x == 0) {
+		return 0;
+	} else {
+		int m := mul(x - 1, y);
+		int r := m + y;
+		return r;
+	}
+}
+

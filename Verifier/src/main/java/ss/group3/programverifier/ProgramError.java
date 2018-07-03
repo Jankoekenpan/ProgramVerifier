@@ -1,21 +1,23 @@
 package ss.group3.programverifier;
 
-import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.ParserRuleContext;
 
 import com.microsoft.z3.Model;
 
 public class ProgramError {
-	private ParseTree source;
+	private ParserRuleContext source;
 	private Model model;
 	private String smt;
+	private String description;
 	
-	public ProgramError(ParseTree source, Model model, String smt) {
+	public ProgramError(ParserRuleContext source, String description, Model model, String smt) {
 		this.source = source;
+		this.description = description;
 		this.model = model;
 		this.smt = smt;
 	}
 	
-	public ParseTree getSource() {
+	public ParserRuleContext getSource() {
 		return source;
 	}
 	
@@ -25,5 +27,9 @@ public class ProgramError {
 	
 	public String getSmt() {
 		return smt;
+	}
+	
+	public String getDescription() {
+		return description;
 	}
 }

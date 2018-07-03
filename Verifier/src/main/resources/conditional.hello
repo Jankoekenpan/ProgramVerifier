@@ -33,3 +33,7 @@ if (v > 3) {
 }
 
 # assert (w == 3) || (w == 4) #
+
+if (false) {
+	# assert false #
+}

@@ -37,7 +37,7 @@ public class Z3GeneratorTest {
 		LanguageParser parser = new LanguageParser(stream);
 		
 		// check for syntax errors
-		Assert.assertEquals(0, parser.getNumberOfSyntaxErrors());
+		Assert.assertEquals("Syntax error in input file", 0, parser.getNumberOfSyntaxErrors());
 		
 		//parse tree
 		LanguageParser.ProgramContext programTree = parser.program();
@@ -60,7 +60,9 @@ public class Z3GeneratorTest {
 		}
 		
 		for (ProgramError error : unexpected) {
-			System.out.println("Error with contract " + error.getSource().getText());
+			int line = error.getSource().start.getLine();
+			System.out.println("Error on line " + line + ", expression '" + error.getSource().getText() + "'");
+			System.out.println(error.getDescription());
 			System.out.println(error.getSmt());
 			System.out.println(error.getModel());
 		}

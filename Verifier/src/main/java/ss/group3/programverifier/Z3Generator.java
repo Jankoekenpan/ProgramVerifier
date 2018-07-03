@@ -10,10 +10,11 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
-import org.antlr.v4.runtime.RuleContext;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+import com.microsoft.z3.ArithExpr;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
@@ -27,6 +28,7 @@ import ss.group3.programverifier.LanguageParser.DeclarationStatContext;
 import ss.group3.programverifier.LanguageParser.ExpressionContext;
 import ss.group3.programverifier.LanguageParser.FunctionCallExprContext;
 import ss.group3.programverifier.LanguageParser.FunctionDefStatContext;
+import ss.group3.programverifier.LanguageParser.IdExprContext;
 import ss.group3.programverifier.LanguageParser.IfStatContext;
 import ss.group3.programverifier.LanguageParser.ParameterContext;
 import ss.group3.programverifier.LanguageParser.ProgramContext;
@@ -146,7 +148,7 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 	}
 	
 	Expr getReturnVar() {
-		return curScope().returnVariable;
+		return curScope().returnExpr;
 	}
 
 	private Scope curScope() {
@@ -187,14 +189,17 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		return constExpr;
 	}
 	
-	private void checkExpression(BoolExpr expr, RuleContext ctx) {
+	private void checkExpression(BoolExpr expr, ParserRuleContext ctx, String description) {
 		solver.push();
 		
-		solver.add(c.mkNot(expr));
+		solver.add(c.mkNot(c.mkImplies(curScope().pathCondition, expr)));
 		
 		if (solver.check() == Status.SATISFIABLE) {
-			errors.add(new ProgramError(ctx, solver.getModel(), solver.toString()));
+			errors.add(new ProgramError(ctx, description, solver.getModel(), solver.toString()));
 		}
+		
+//		System.out.println("debug " + ctx.getText());
+//		System.out.println(solver);
 		
 		solver.pop();
 	}
@@ -219,11 +224,11 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		String id = getId(ctx.ID());
 		
 		// TODO: not sure if it's needed to set it to the old value if the path condition does not hold.
-//		Expr prevConst = getVar(id);
+		Expr prevConst = getVar(id);
 		Expr newConst = newVar(id);
 
-//		BoolExpr eq = c.mkEq(newConst, c.mkITE(currentCond(), expr(ctx.expression()), prevConst));
-		BoolExpr eq = c.mkEq(newConst, expr(ctx.expression()));
+		BoolExpr eq = c.mkEq(newConst, c.mkITE(currentCond(), expr(ctx.expression()), prevConst));
+//		BoolExpr eq = c.mkEq(newConst, expr(ctx.expression()));
 		solver.add(eq);
 		
 		return null;
@@ -231,9 +236,22 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 	
 	@Override
 	public Void visitReturnStat(ReturnStatContext ctx) {
-		solver.add(c.mkEq(getReturnVar(), expr(ctx.expression())));
+		scopeStack.push(new Scope(curScope()));
+		curScope().returnExpr = expr(ctx.expression());
+
+		FunctionDefStatContext func = curScope().function;
 		
-		curScope().pathCondition = c.mkFalse();
+		// check ensures contracts
+		for (ContractContext ensures : getContracts(func, "ensures")) {
+			BoolExpr check = (BoolExpr) expr(ensures.expression());
+			checkExpression(check, ctx, "Failed ensures contract " + ensures.getText());
+		}
+		
+		scopeStack.pop();
+		
+		BoolExpr cond = newPathCond();
+		curScope().pathCondition = cond;
+		solver.add(c.mkEq(cond, c.mkFalse()));
 		
 		return null;
 	}
@@ -265,7 +283,6 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		BoolExpr falseCond = newPathCond();
 
 		solver.add(c.mkEq(trueCond, c.mkAnd(currentCond(), condition)));
-		solver.add(c.mkEq(falseCond, c.mkAnd(currentCond(), c.mkNot(trueCond))));
 
 		Scope curScope = curScope();
 		
@@ -280,6 +297,8 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		scopeStack.pop();
 		
 		if(ctx.statement().size() > 1) {
+			solver.add(c.mkEq(falseCond, c.mkAnd(currentCond(), c.mkNot(trueCond))));
+			
 			scopeStack.push(falseScope);
 			visit(ctx.statement(1));
 			scopeStack.pop();
@@ -319,7 +338,7 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 			Expr falseVar = falseScope.variables.get(var);
 			Expr defaultVar = curScope.variables.get(var);
 			
-			Expr e = c.mkITE(trueScope.pathCondition, trueVar, c.mkITE(falseScope.pathCondition, falseVar, defaultVar));
+			Expr e = c.mkITE(trueCond, trueVar, c.mkITE(falseCond, falseVar, defaultVar));
 			solver.add(c.mkEq(newVar(var), e));
 		}
 		
@@ -330,10 +349,10 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 			
 			if(trueVars.contains(var)) {
 				e = trueScope.variables.get(var);
-				cond = trueScope.pathCondition;
+				cond = trueCond;
 			} else if(falseVars.contains(var)) {
 				e = falseScope.variables.get(var);
-				cond = falseScope.pathCondition;
+				cond = falseCond;
 			} else {
 				throw new RuntimeException(String.format("Variable \"%s\" not found in previous scopes", var));
 			}
@@ -350,7 +369,9 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		String type = con.contract_type().getText();
 		switch (type) {
 		case "assert":
-			checkExpression((BoolExpr) expr(con.expression()), ctx);
+			BoolExpr expr = (BoolExpr) expr(con.expression());
+			
+			checkExpression(expr, ctx, "Failed assertion " + con.expression().getText());
 			break;
 		default:
 			throw new UnsupportedOperationException("Contract type " + type + " not supported in statements.");
@@ -359,15 +380,9 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		return null;
 	}
 	
-	private List<ContractContext> getRequires(FunctionDefStatContext ctx) {
+	private List<ContractContext> getContracts(FunctionDefStatContext ctx, String type) {
 		return ctx.contract().stream()
-				.filter((c) -> c.contract_type().getText().equals("requires"))
-				.collect(Collectors.toList());
-	}
-	
-	private List<ContractContext> getEnsures(FunctionDefStatContext ctx) {
-		return ctx.contract().stream()
-				.filter((c) -> c.contract_type().getText().equals("ensures"))
+				.filter((c) -> c.contract_type().getText().equals(type))
 				.collect(Collectors.toList());
 	}
 	
@@ -378,6 +393,7 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		
 		Scope scope = new Scope(pathCond);
 		scopeStack.push(scope);
+		scope.function = ctx;
 		
 		// declare parameters in current scope
 		for (ParameterContext p : ctx.parameter()) {
@@ -385,21 +401,16 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 			scope.variables.put(getId(p.ID()), expr);
 		}
 		
-		// create return variable
-		scope.returnVariable = declareVar("$return-" + ctx.ID().getText(), ctx.return_type().getText());
-		
 		// add requires contracts
-		for (ContractContext c : getRequires(ctx)) {
+		for (ContractContext c : getContracts(ctx, "requires")) {
 			solver.add((BoolExpr) expr(c.expression()));
 		}
 		
+		scope.initialVariables.putAll(scope.variables);
+		
 		visit(ctx.statement());
 		
-		// check ensures contracts
 		
-		for (ContractContext c : getEnsures(ctx)) {
-			checkExpression((BoolExpr) expr(c.expression()), ctx);
-		}
 		
 		scopeStack.pop();
 		
@@ -425,21 +436,45 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 			
 			String id = getId(p.ID());
 			Expr argVar = makeConst("$p" + callCount + "$" + id, p.type().getText());
-			curScope().variables.put(id, argVar);
 			solver.add(c.mkEq(argVar, expr(e)));
+			curScope().variables.put(id, argVar);
 		}
 		
-		for (ContractContext c : getRequires(func)) {
-			checkExpression((BoolExpr) expr(c.expression()), ctx);
+		// check requires
+		for (ContractContext c : getContracts(func, "requires")) {
+			String description = "Failed requires contract " + c.expression().getText();
+			checkExpression((BoolExpr) expr(c.expression()), ctx, description);
 		}
 		
+		// check decreases contracts
+		if (func == curScope().function) {
+			// only check recursive calls
+			
+			for (ContractContext con : getContracts(func, "decreases")) {
+				if (con.expression() instanceof IdExprContext) {
+					String id = getId(((IdExprContext) con.expression()).ID());
+					
+					ArithExpr oldValue = (ArithExpr) curScope().initialVariables.get(id);
+					ArithExpr newValue = (ArithExpr) getVar(id);
+					
+					// check (newValue >= 0) && (newValue < oldValue)
+					BoolExpr check = c.mkAnd(c.mkGe(newValue, c.mkInt(0)), c.mkLt(newValue, oldValue));
+					checkExpression(check, ctx, "Failed decreases contract on variable " + id);
+				} else {
+					// this should probably be handled by the parser, but handling 
+					// it like this was easier in the short term
+					throw new RuntimeException("Cannot assert decreases contract on expressions");
+				}
+			}
+		}
 		
 		// create result variable
-		Expr result = declareVar("$result-" + funcId + callCount, func.return_type().getText());
-		curScope().returnVariable = result;
+		String resultId = "$result-" + funcId + callCount;
+		Expr result = declareVar(resultId, func.return_type().getText());
+		curScope().returnExpr = result;
 		
 		// fill in ensures
-		for (ContractContext c : getEnsures(func)) {
+		for (ContractContext c : getContracts(func, "ensures")) {
 			solver.add((BoolExpr) expr(c.expression()));
 		}
 		
@@ -490,16 +525,25 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		BoolExpr pathCondition;
 		
 		/**
-		 * All variables in the current scope. Maps variable id to SSA valid z3 expression.
+		 * All variables in the current scope. Maps variable id to SSA valid 
+		 * z3 expression.
 		 */
 		Map<String, Expr> variables = new HashMap<>();
+		
+		/**
+		 * Variables declared at the start of a function. Used for checking 
+		 * 'decreases' contracts.
+		 */
+		Map<String, Expr> initialVariables = new HashMap<>();
 		
 		/**
 		 * map variable id to its type.
 		 */
 		private HashMap<String, String> types = new HashMap<>();
 		
-		private Expr returnVariable;
+		private Expr returnExpr;
+		
+		private FunctionDefStatContext function;
 		
 		Scope(BoolExpr pathCondition) {
 			this.pathCondition = pathCondition;
@@ -507,9 +551,11 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		
 		Scope(Scope lower) {
 			this.pathCondition = lower.pathCondition;
-			this.returnVariable = lower.returnVariable;
+			this.returnExpr = lower.returnExpr;
 			variables.putAll(lower.variables);
+			initialVariables.putAll(lower.initialVariables);
 			types.putAll(lower.types);
+			this.function = lower.function;
 		}
 	}
 }
