@@ -504,7 +504,7 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
             //inside the while body, every variabele has a new identifier
             Expr afterWhileVar = newVar(inWhileVar);
         }
-        //check ((invariant) && (not condition))
+        //assert ((invariant) && (not condition))
         BoolExpr condition = (BoolExpr) expr(ctx.expression());
         for (ContractContext contractContext : invariants) {
             ExpressionContext expr = contractContext.expression();
