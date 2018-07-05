@@ -1,4 +1,5 @@
 int i := 0;
+int n := 5;
 while (i < n)
 # invariant i <= 0 && i <= n #
 # decreases n - i #

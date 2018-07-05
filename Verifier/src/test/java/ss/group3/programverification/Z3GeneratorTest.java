@@ -88,6 +88,6 @@ public class Z3GeneratorTest {
 	
 	@Test
 	public void testWhile() {
-//		checkFile("src/main/resources/loop.hello");
+		checkFile("src/main/resources/loop.hello");
 	}
 }

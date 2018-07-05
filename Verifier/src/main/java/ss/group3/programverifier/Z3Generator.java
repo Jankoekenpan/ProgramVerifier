@@ -476,7 +476,8 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
         solver.add(z3wileCondition);
 
         Scope oldScope = curScope();
-        Scope whileBodyScope = new Scope(z3wileCondition);
+        Scope whileBodyScope = new Scope(oldScope);
+        whileBodyScope.pathCondition = z3wileCondition;
         whileBodyScope.initialVariables.putAll(oldScope.variables);
         scopeStack.push(whileBodyScope);
 
@@ -545,7 +546,6 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
             BoolExpr terminationExpr = c.mkAnd(invariantExpr, c.mkNot(condition));
             solver.add(terminationExpr);
         }
-
 
 	    return null;
 	    //TODO what if our while body contains an early return?
