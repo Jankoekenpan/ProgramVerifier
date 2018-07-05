@@ -32,7 +32,7 @@ int r := max(1, 2);
 # assert r == 2 #
 ```
 
-The grammar of the language in EBNF form can be found in `Verifier/src/main/antlr4/ss/group3/programverifier`.
+The grammar of the language in EBNF form can be found in `Verifier/src/main/antlr4/ss/group3/programverifier/Language.g4`.
 
 # Project structure
 
