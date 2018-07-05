@@ -501,7 +501,9 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		
 		super.visitProgram(ctx);
 		
+		System.out.println("-- start generated SMT code --");
 		System.out.println(solver);
+		System.out.println("-- end generated SMT code --");
 		
 		return null;
 	}

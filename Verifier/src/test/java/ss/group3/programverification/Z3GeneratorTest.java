@@ -60,11 +60,7 @@ public class Z3GeneratorTest {
 		}
 		
 		for (ProgramError error : unexpected) {
-			int line = error.getSource().start.getLine();
-			System.out.println("Error on line " + line + ", expression '" + error.getSource().getText() + "'");
-			System.out.println(error.getDescription());
-			System.out.println(error.getSmt());
-			System.out.println(error.getModel());
+			System.out.println(error);
 		}
 		
 		for (Integer line : expected) {

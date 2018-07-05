@@ -32,4 +32,21 @@ public class ProgramError {
 	public String getDescription() {
 		return description;
 	}
+	
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		
+		int line = source.start.getLine();
+		builder.append("Error on line " + line + ", expression '" + source.getText() + "'");
+		builder.append("\n");
+		builder.append(description);
+		builder.append("\n\nSMT file up to assertion:\n");
+		builder.append(smt);
+		builder.append("\nSMT model of failure:\n");
+		builder.append(model);
+		builder.append("\n");
+		
+		return builder.toString();
+	}
 }
