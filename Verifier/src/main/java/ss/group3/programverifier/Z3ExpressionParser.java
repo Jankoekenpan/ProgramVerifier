@@ -149,12 +149,6 @@ public class Z3ExpressionParser extends LanguageBaseVisitor<Expr> {
 		return generator.genFunctionCallExpr(ctx);
 	}
 	
-//	@Override
-//	public Expr visitContractExpr(ContractExprContext ctx) {
-//		// TODO Auto-generated method stub
-//		return null;
-//	}
-	
 	@Override
 	public Expr visitResultContrExpr(ResultContrExprContext ctx) {
 		return generator.getReturnVar();

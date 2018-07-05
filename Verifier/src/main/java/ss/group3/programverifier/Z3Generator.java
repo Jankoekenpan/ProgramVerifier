@@ -64,6 +64,9 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		expressionParser = new Z3ExpressionParser(this, c);
 	}
 	
+	/**
+	 * Helper function to transform an AST expression to a Z3 expression.
+	 */
 	private Expr expr(ParseTree ctx) {
 		return expressionParser.visit(ctx);
 	}
@@ -82,6 +85,9 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		}
 	}
 	
+	/**
+	 * @return A new Z3 bool constant with an unique name for path conditions.
+	 */
 	private BoolExpr newPathCond() {
 		String id = "$c$" + conditionCount++;
 		return c.mkBoolConst(id);
@@ -176,6 +182,10 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		return newConst;
 	}
 	
+	/**
+	 * Creates a new Z3 constant from the specified id and type, and stores 
+	 * the reference in the current scope.
+	 */
 	private Expr declareVar(String id, String type) {
 		// the fist counter value is 0, the $ symbol is used because it is not in the grammar, guaranteeing no 
 		// collisions.
@@ -194,23 +204,33 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		return constExpr;
 	}
 	
-	private void checkExpression(BoolExpr expr, ParserRuleContext ctx, String description) {
+	/**
+	 * Checks if the given boolean expression always holds. Adds an error to 
+	 * the internal list if not.
+	 * @param expr The boolean expression to check.
+	 * @param ctx The parse tree node from which the error originated.
+	 * @param description An description of the error.
+	 */
+	void checkExpression(BoolExpr expr, ParserRuleContext ctx, String description) {
 		solver.push();
-		
+
 		solver.add(c.mkNot(c.mkImplies(curScope().pathCondition, expr)));
 		
 		if (solver.check() == Status.SATISFIABLE) {
 			errors.add(new ProgramError(ctx, description, solver.getModel(), solver.toString()));
 		}
 		
-//		System.out.println("debug " + ctx.getText());
-//		System.out.println(solver);
+		System.out.println("debug " + ctx.getText());
+		System.out.println(solver);
 		
 		solver.pop();
 	}
 	
 	// statements
 	
+	/**
+	 * Declaration and optional assignment of a variable. (int x := 1;)
+	 */
 	@Override
 	public Void visitDeclarationStat(DeclarationStatContext ctx) {
 		Expr constExpr = declareVar(getId(ctx.ID()), ctx.type().getText());
@@ -224,6 +244,9 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		return null;
 	}
 	
+	/**
+	 * Assignment of a previously declared variable. (x := 2;)
+	 */
 	@Override
 	public Void visitAssignStat(AssignStatContext ctx) {
 		String id = getId(ctx.ID());
@@ -239,6 +262,9 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		return null;
 	}
 	
+	/**
+	 * Return statement, only allowed in functions.
+	 */
 	@Override
 	public Void visitReturnStat(ReturnStatContext ctx) {
 		scopeStack.push(new Scope(curScope()));
@@ -391,12 +417,18 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
                 .collect(Collectors.toList());
     }
 	
+	/**
+	 * Helper function to get all contract parse nodes of a given type.
+	 */
 	private List<ContractContext> getContracts(FunctionDefStatContext ctx, String type) {
 		return ctx.contract().stream()
 				.filter((c) -> c.contract_type().getText().equals(type))
 				.collect(Collectors.toList());
 	}
 	
+	/**
+	 * Function declaration
+	 */
 	@Override
 	public Void visitFunctionDefStat(FunctionDefStatContext ctx) {
 		BoolExpr pathCond = newPathCond();
@@ -589,6 +621,9 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 	
 	// program
 	
+	/**
+	 * Start point of the Z3 generation.
+	 */
 	@Override
 	public Void visitProgram(ProgramContext ctx) {
 		// find all declared functions
@@ -601,8 +636,9 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		solver.add(c.mkEq(c.mkTrue(), cond));
 		scopeStack.push(new Scope(cond));
 		
-		super.visitProgram(ctx);
+		super.visitProgram(ctx);//visit the child nodes, i.e. all statements
 		
+		// print the z3 code. Doesn't (and can't) print the z3 code in push/pop blocks.
 		System.out.println("-- start generated SMT code --");
 		System.out.println(solver);
 		System.out.println("-- end generated SMT code --");
@@ -612,18 +648,23 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 	
 	// public interface
 	
+	/**
+	 * @return Whether the checked program contains zero errors.
+	 */
 	public boolean isCorrect() {
 		return errors.isEmpty();
 	}
 	
+	/**
+	 * @return The list of all errors found during checking.
+	 */
 	public List<ProgramError> getErrors() {
 		return Collections.unmodifiableList(errors);
 	}
 	
 	/**
 	 * Class representing a scope of the program. A scope is added to the 
-	 * scope stack with every block statement, if statement, function 
-	 * definition etc.
+	 * scope stack with every if statement, function definition etc.
 	 */
 	private class Scope {
 		BoolExpr pathCondition;

@@ -85,4 +85,9 @@ public class Z3GeneratorTest {
 	public void testFunction() {
 		checkFile("src/main/resources/function.hello", 17);
 	}
+	
+	@Test
+	public void testWhile() {
+//		checkFile("src/main/resources/loop.hello");
+	}
 }
