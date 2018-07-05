@@ -13,6 +13,7 @@ import ss.group3.programverifier.LanguageParser.IdExprContext;
 import ss.group3.programverifier.LanguageParser.LogicBinOpExprContext;
 import ss.group3.programverifier.LanguageParser.NotExprContext;
 import ss.group3.programverifier.LanguageParser.NumExprContext;
+import ss.group3.programverifier.LanguageParser.OldContrExprContext;
 import ss.group3.programverifier.LanguageParser.ParExprContext;
 import ss.group3.programverifier.LanguageParser.PlusOrMinusExprContext;
 import ss.group3.programverifier.LanguageParser.ResultContrExprContext;
@@ -157,5 +158,10 @@ public class Z3ExpressionParser extends LanguageBaseVisitor<Expr> {
 	@Override
 	public Expr visitResultContrExpr(ResultContrExprContext ctx) {
 		return generator.getReturnVar();
+	}
+	
+	@Override
+	public Expr visitOldContrExpr(OldContrExprContext ctx) {
+		return generator.getInitialVar(generator.getId(ctx.ID()));
 	}
 }

@@ -146,6 +146,21 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		});
 		throw new IllegalArgumentException(String.format("Variable \"%s\" not in scope", id));
 	}
+
+	Expr getInitialVar(String id) {
+		Map<String, Expr> initialVariables = curScope().initialVariables;
+		
+		if(initialVariables.containsKey(id)) {
+			return initialVariables.get(id);
+		} else {
+			// the given id is not in the initial variables, so either the 
+			// expression is being checked in a function call, or the id is 
+			// not one of the parameters. In either case, we can just use the 
+			// variable as it is in the scope. 
+			
+			return getVar(id);
+		}
+	}
 	
 	Expr getReturnVar() {
 		return curScope().returnExpr;
@@ -409,8 +424,6 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		scope.initialVariables.putAll(scope.variables);
 		
 		visit(ctx.statement());
-		
-		
 		
 		scopeStack.pop();
 		

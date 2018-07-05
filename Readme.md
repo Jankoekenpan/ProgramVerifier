@@ -9,7 +9,7 @@ To build the program Java 8 and Z3 with Java bindings should be installed. To bu
 
 - Z3 Java API. The Z3 API is used to generate the Z3 code. The verifier works by checking using the API, instead of generating a SMT file and using z3 after that. A limitation of this approach is that the assertions inside of a push/pop block cannot be accesed after a pop. This means that the full SMT code can't be printed after a run.
 - ANTLR. This is a parser-generator used for the parsing of the language. It gets a grammar file as input, and generates Java code that parses the input files.
-- JUnit. This is a unit testing framework that we've used to ensure that all verification features continued to work during development. ALl unit tests are run when the code is built.
+- JUnit. This is a unit testing framework that we've used to ensure that all verification features continued to work during development. All unit tests are run when the code is built.
 
 # Language Specification
 
