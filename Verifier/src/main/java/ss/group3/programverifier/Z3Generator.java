@@ -499,8 +499,23 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
             BoolExpr newGreaterThanOld = c.mkGt(newExpr, oldExpr);
             checkExpression(newGreaterThanOld, ctx, "Couldn't verify the 'decreases' contract " + decreases.get(i).getText() + ".");
         }
-        
-        //TODO establish (NOT (WhileCondition)) && (LoopInvariant) afterwards (make new vars again!)
+
+
+        solver.push();
+        for (String inWhileVar : whileBodyScope.variables.keySet()) {
+            //inside the while body, every variabele has a new identifier
+            Expr afterWhileVar = newVar(inWhileVar);
+        }
+        //check ((invariant) && (not condition))
+        BoolExpr condition = (BoolExpr) expr(ctx.expression());
+        for (ContractContext contractContext : invariants) {
+            ExpressionContext expr = contractContext.expression();
+            BoolExpr invariantExpr = (BoolExpr) expr(expr);
+            //TODO is this the correct way to do it?
+            BoolExpr terminationExpr = c.mkAnd(invariantExpr, c.mkNot(condition));
+            checkExpression(terminationExpr, ctx, "Couldn't verify ((invariant) && (not condition) after the loop body.");
+        }
+        solver.pop();
 
 
         solver.pop(); //we are no longer in the whileCondition scope
