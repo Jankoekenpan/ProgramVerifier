@@ -1,0 +1,45 @@
+# Program Verification
+
+Jan Boerman (s1466518)
+Michiel Bakker (s1492454)
+
+# Installation
+
+To build the program Java 8 and Z3 with Java bindings should be installed. To build, simply run `mvn install`. In order to check a language file, run `java -jar target/Verifier-0.1.jar <path-to-file>`. Example programs can be found in `Verifier/src/main/resources`. The verifier has the following dependencies:
+
+- Z3 Java API. The Z3 API is used to generate the Z3 code. The verifier works by checking using the API, instead of generating a SMT file and using z3 after that. A limitation of this approach is that the assertions inside of a push/pop block cannot be accesed after a pop. This means that the full SMT code can't be printed after a run.
+- ANTLR. This is a parser-generator used for the parsing of the language. It gets a grammar file as input, and generates Java code that parses the input files.
+- JUnit. This is a unit testing framework that we've used to ensure that all verification features continued to work during development. ALl unit tests are run when the code is built.
+
+# Language Specification
+
+The program verifier we designed checks a simple programming language that is vaguely similar to C and the pseudocode used in the course manual. The language supports assignments, expressions, if-statements, while-loops, contracts and functions. An example program is given below.
+
+```
+int max(int x, int y)
+# requires y > 0 #
+# ensures (x >= y) => (\result == x) #
+# ensures (y >= x) => (\result == y) #
+{
+	if (x > y) {
+		return x;
+	} else {
+		return y;
+	}
+}
+
+int r := max(1, 2);
+# assert r == 2 #
+```
+
+The grammar of the language in EBNF form can be found in `Verifier/src/main/antlr4/ss/group3/programverifier`.
+
+# Project structure
+
+The following files contain the important classes of the verifier:
+
+- `Verifier/src/main/java/ss/group3/programverifier/Z3Generator.java`. Traverses the AST and generates the Z3 symbols to verify the code.
+- `Verifier/src/main/java/ss/group3/programverifier/Z3ExpressionParser.java`. Transforms expressions in the languge to Z3 code.
+- `Verifier/src/test/java/ss/group3/programverification/Z3GeneratorTest.java`. The unit test of the verifier. Tests all features of the verifier, and checks if no wrong errors and all expected errors are found.
+
+All classes are documented with comments to explain the details.
