@@ -21,18 +21,8 @@ import com.microsoft.z3.Expr;
 import com.microsoft.z3.Solver;
 import com.microsoft.z3.Status;
 
-import ss.group3.programverifier.LanguageParser.AssignStatContext;
-import ss.group3.programverifier.LanguageParser.ContractContext;
-import ss.group3.programverifier.LanguageParser.ContractStatContext;
-import ss.group3.programverifier.LanguageParser.DeclarationStatContext;
-import ss.group3.programverifier.LanguageParser.ExpressionContext;
-import ss.group3.programverifier.LanguageParser.FunctionCallExprContext;
-import ss.group3.programverifier.LanguageParser.FunctionDefStatContext;
-import ss.group3.programverifier.LanguageParser.IdExprContext;
-import ss.group3.programverifier.LanguageParser.IfStatContext;
-import ss.group3.programverifier.LanguageParser.ParameterContext;
-import ss.group3.programverifier.LanguageParser.ProgramContext;
-import ss.group3.programverifier.LanguageParser.ReturnStatContext;
+import ss.group3.programverifier.LanguageParser.*;
+import ss.group3.programverifier.ast.ContractExpression;
 
 /**
  * Traverses the AST and generates the SMT statements.
@@ -420,6 +410,12 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		
 		return null;
 	}
+
+	private List<ContractContext> getContracts(WhileStatContext ctx, String type) {
+	    return ctx.contract().stream()
+                .filter(c -> c.contract_type().getText().equals(type))
+                .collect(Collectors.toList());
+    }
 	
 	/**
 	 * Helper function to get all contract parse nodes of a given type.
@@ -461,6 +457,90 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		
 		return null;
 	}
+
+	@Override
+    public Void visitWhileStat(WhileStatContext ctx) {
+        //invariants should hold from the beginning
+        List<ContractContext> invariants = getContracts(ctx, "invariant");
+        for (ContractContext contractContext : invariants) {
+            ExpressionContext expr = contractContext.expression();
+            BoolExpr z3Expr = (BoolExpr) expr(expr);
+
+            checkExpression(z3Expr, ctx, "Couldn't establish the loop invariant " + expr.getText() + " before entering the loop.");
+        }
+
+        // now we assert the loop invariants, and the loop condition.
+        // we create a new path condition (we are in the loop now)
+        ExpressionContext whileCondition = ctx.expression();
+        BoolExpr z3wileCondition = (BoolExpr) expr(whileCondition);
+        solver.push(); //everything that happens from here on has this whileCondition
+        solver.add(z3wileCondition);
+
+        Scope oldScope = curScope();
+        Scope whileBodyScope = new Scope(z3wileCondition);
+        whileBodyScope.initialVariables.putAll(oldScope.variables);
+        scopeStack.push(whileBodyScope);
+
+        for (String oldVar : oldScope.variables.keySet()) {
+            //inside the while body, every variabele has a new identifier
+            Expr newVar = newVar(oldVar);
+        }
+
+        List<ContractContext> decreases = getContracts(ctx, "decreases");
+        List<ArithExpr> decreasesExpressionsInitially = decreases.stream()
+                .map(contractContext -> contractContext.expression())
+                .map(expressionContext -> (ArithExpr) expr(expressionContext))
+                .collect(Collectors.toList());
+
+        // The initial variables in the while body are the variables after renaming the variables to
+        // their loopbody-specific name. These will be used to check the decreases contract
+        whileBodyScope.initialVariables.putAll(whileBodyScope.variables);
+
+        // assert the loop condition and every invariant
+        BoolExpr newWhileCondition = (BoolExpr) expr(whileCondition);
+        solver.add(newWhileCondition);
+
+        // assert every contract on the loop (don't check just yet)
+        for (ContractContext contractContext : getContracts(ctx, "invariant")) {
+            ExpressionContext expr = contractContext.expression();
+            BoolExpr z3Expr = (BoolExpr) expr(expr);
+            solver.add(z3Expr);
+        }
+
+        //now visit the body of the while loop
+        StatementContext body = ctx.statement();
+        visit(body); //will insert new variables in the scope
+
+        //check the loop invariants with the new smt variables
+        for (ContractContext contractContext : invariants) {
+            ExpressionContext expr = contractContext.expression();
+            BoolExpr z3Expr = (BoolExpr) expr(expr);
+
+            checkExpression(z3Expr, ctx, "Couldn't establish the loop invariant " + expr.getText() + " after a loop body iteration.");
+        }
+        //check the decreases.
+        List<ArithExpr> decreasesExpressionsAfterwards = decreases.stream()
+                .map(contractContext -> contractContext.expression())
+                .map(expressionContext -> (ArithExpr) expr(expressionContext))
+                .collect(Collectors.toList());
+        for (int i = 0; i < decreasesExpressionsAfterwards.size(); i++) {
+            //check that the new expression is greater than the old one
+            ArithExpr newExpr = decreasesExpressionsAfterwards.get(i);
+            ArithExpr oldExpr = decreasesExpressionsInitially.get(i);
+
+            BoolExpr newGreaterThanOld = c.mkGt(newExpr, oldExpr);
+            checkExpression(newGreaterThanOld, ctx, "Couldn't verify the 'decreases' contract " + decreases.get(i).getText() + ".");
+        }
+        
+        //TODO establish (NOT (WhileCondition)) && (LoopInvariant) afterwards (make new vars again!)
+
+
+        solver.pop(); //we are no longer in the whileCondition scope
+        scopeStack.pop();
+
+	    return null;
+	    //TODO what if our while body contains an early return?
+    }
 	
 	public Expr genFunctionCallExpr(FunctionCallExprContext ctx) {
 		String funcId = ctx.ID().getText();
