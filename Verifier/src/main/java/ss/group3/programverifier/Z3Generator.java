@@ -473,7 +473,6 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
         // we create a new path condition (we are in the loop now)
         ExpressionContext whileCondition = ctx.expression();
         BoolExpr z3wileCondition = (BoolExpr) expr(whileCondition);
-        solver.push(); //everything that happens from here on has this whileCondition
         solver.add(z3wileCondition);
 
         Scope oldScope = curScope();
@@ -533,24 +532,19 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
         }
 
 
-        solver.push();
         for (String inWhileVar : whileBodyScope.variables.keySet()) {
             //inside the while body, every variabele has a new identifier
             Expr afterWhileVar = newVar(inWhileVar);
         }
-        //check ((invariant) && (not condition))
+        //assert ((invariant) && (not condition))
         BoolExpr condition = (BoolExpr) expr(ctx.expression());
         for (ContractContext contractContext : invariants) {
             ExpressionContext expr = contractContext.expression();
             BoolExpr invariantExpr = (BoolExpr) expr(expr);
-            //TODO is this the correct way to do it?
             BoolExpr terminationExpr = c.mkAnd(invariantExpr, c.mkNot(condition));
-            checkExpression(terminationExpr, ctx, "Couldn't verify ((invariant) && (not condition) after the loop body.");
+            solver.add(terminationExpr);
         }
-        solver.pop();
 
-
-        solver.pop(); //we are no longer in the whileCondition scope
         scopeStack.pop();
 
 	    return null;
