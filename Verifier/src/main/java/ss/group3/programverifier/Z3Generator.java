@@ -502,7 +502,7 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
         scopeStack.pop();
 
         for (String inWhileVar : whileBodyScope.variables.keySet()) {
-            //inside the while body, every variabele has a new identifier
+            //after the while body, every variabele has a new identifier
             Expr afterWhileVar = newVar(inWhileVar);
         }
         //assert ((invariant) && (not condition))
