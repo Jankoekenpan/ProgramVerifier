@@ -22,6 +22,7 @@ import com.microsoft.z3.Solver;
 import com.microsoft.z3.Status;
 
 import ss.group3.programverifier.LanguageParser.*;
+import ss.group3.programverifier.ast.ContractExpression;
 
 /**
  * Traverses the AST and generates the SMT statements.
@@ -453,7 +454,11 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
             Expr newVar = newVar(oldVar);
         }
 
-        Map<String, Expr> beginBodyExpressions = new HashMap<>(curScope().variables);
+        List<ContractContext> decreases = getContracts(ctx, "decreases");
+        List<ArithExpr> decreasesExpressionsInitially = decreases.stream()
+                .map(contractContext -> contractContext.expression())
+                .map(expressionContext -> (ArithExpr) expr(expressionContext))
+                .collect(Collectors.toList());
 
         // The initial variables in the while body are the variables after renaming the variables to
         // their loopbody-specific name. These will be used to check the decreases contract
@@ -482,9 +487,19 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
             checkExpression(z3Expr, ctx, "Couldn't establish the loop invariant " + expr.getText() + " after a loop body iteration.");
         }
         //check the decreases.
-        //TODO find out the old expression, can compare it to the new expression (I may have to adjust the Scope class)
+        List<ArithExpr> decreasesExpressionsAfterwards = decreases.stream()
+                .map(contractContext -> contractContext.expression())
+                .map(expressionContext -> (ArithExpr) expr(expressionContext))
+                .collect(Collectors.toList());
+        for (int i = 0; i < decreasesExpressionsAfterwards.size(); i++) {
+            //check that the new expression is greater than the old one
+            ArithExpr newExpr = decreasesExpressionsAfterwards.get(i);
+            ArithExpr oldExpr = decreasesExpressionsInitially.get(i);
 
-
+            BoolExpr newGreaterThanOld = c.mkGt(newExpr, oldExpr);
+            checkExpression(newGreaterThanOld, ctx, "Couldn't verify the 'decreases' contract " + decreases.get(i).getText() + ".");
+        }
+        
         //TODO establish (NOT (WhileCondition)) && (LoopInvariant) afterwards (make new vars again!)
 
 
