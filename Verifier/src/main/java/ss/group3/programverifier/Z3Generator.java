@@ -21,8 +21,20 @@ import com.microsoft.z3.Expr;
 import com.microsoft.z3.Solver;
 import com.microsoft.z3.Status;
 
-import ss.group3.programverifier.LanguageParser.*;
-import ss.group3.programverifier.ast.ContractExpression;
+import ss.group3.programverifier.LanguageParser.AssignStatContext;
+import ss.group3.programverifier.LanguageParser.ContractContext;
+import ss.group3.programverifier.LanguageParser.ContractStatContext;
+import ss.group3.programverifier.LanguageParser.DeclarationStatContext;
+import ss.group3.programverifier.LanguageParser.ExpressionContext;
+import ss.group3.programverifier.LanguageParser.FunctionCallExprContext;
+import ss.group3.programverifier.LanguageParser.FunctionDefStatContext;
+import ss.group3.programverifier.LanguageParser.IdExprContext;
+import ss.group3.programverifier.LanguageParser.IfStatContext;
+import ss.group3.programverifier.LanguageParser.ParameterContext;
+import ss.group3.programverifier.LanguageParser.ProgramContext;
+import ss.group3.programverifier.LanguageParser.ReturnStatContext;
+import ss.group3.programverifier.LanguageParser.StatementContext;
+import ss.group3.programverifier.LanguageParser.WhileStatContext;
 
 /**
  * Traverses the AST and generates the SMT statements.
@@ -220,8 +232,8 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 			errors.add(new ProgramError(ctx, description, solver.getModel(), solver.toString()));
 		}
 		
-		System.out.println("debug " + ctx.getText());
-		System.out.println(solver);
+//		System.out.println("debug " + ctx.getText());
+//		System.out.println(solver);
 		
 		solver.pop();
 	}
