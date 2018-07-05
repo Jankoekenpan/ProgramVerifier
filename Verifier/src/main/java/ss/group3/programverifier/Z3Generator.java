@@ -74,7 +74,7 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		switch (type) {
 		case "int":
 			return c.mkIntConst(id);
-		case "bool":
+		case "boolean":
 			return c.mkBoolConst(id);
 		default:
 			throw new RuntimeException("Unknown type " + type);
@@ -134,6 +134,21 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 			System.out.println(v);
 		});
 		throw new IllegalArgumentException(String.format("Variable \"%s\" not in scope", id));
+	}
+
+	Expr getInitialVar(String id) {
+		Map<String, Expr> initialVariables = curScope().initialVariables;
+		
+		if(initialVariables.containsKey(id)) {
+			return initialVariables.get(id);
+		} else {
+			// the given id is not in the initial variables, so either the 
+			// expression is being checked in a function call, or the id is 
+			// not one of the parameters. In either case, we can just use the 
+			// variable as it is in the scope. 
+			
+			return getVar(id);
+		}
 	}
 	
 	Expr getReturnVar() {
@@ -405,8 +420,6 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		
 		visit(ctx.statement());
 		
-		
-		
 		scopeStack.pop();
 		
 		return null;
@@ -566,7 +579,9 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		
 		super.visitProgram(ctx);
 		
+		System.out.println("-- start generated SMT code --");
 		System.out.println(solver);
+		System.out.println("-- end generated SMT code --");
 		
 		return null;
 	}

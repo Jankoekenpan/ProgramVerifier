@@ -1,6 +1,6 @@
 int max(int x, int y)
 # requires y > 0 #
-# ensures (x >= y) => (\result == x) #
+# ensures (\old(x) >= \old(y)) => (\result == \old(x)) #
 # ensures (y >= x) => (\result == y) #
 {
 	# assert y > 0 #
@@ -36,5 +36,12 @@ int mul(int x, int y)
 		int r := m + y;
 		return r;
 	}
+}
+
+int checkold(int i)
+# ensures \old(i) == \result + 1 #
+{
+	i := i + 1;
+	return i;
 }
 
