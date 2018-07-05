@@ -85,7 +85,7 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		switch (type) {
 		case "int":
 			return c.mkIntConst(id);
-		case "bool":
+		case "boolean":
 			return c.mkBoolConst(id);
 		default:
 			throw new RuntimeException("Unknown type " + type);
