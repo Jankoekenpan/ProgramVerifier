@@ -499,6 +499,7 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
             checkExpression(newGreaterThanOld, ctx, "Couldn't verify the 'decreases' contract " + decreases.get(i).getText() + ".");
         }
 
+        scopeStack.pop();
 
         for (String inWhileVar : whileBodyScope.variables.keySet()) {
             //inside the while body, every variabele has a new identifier
@@ -513,7 +514,6 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
             solver.add(terminationExpr);
         }
 
-        scopeStack.pop();
 
 	    return null;
 	    //TODO what if our while body contains an early return?
