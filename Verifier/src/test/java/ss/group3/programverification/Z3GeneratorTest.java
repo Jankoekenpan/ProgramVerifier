@@ -101,7 +101,7 @@ public class Z3GeneratorTest {
 	    checkFile("src/main/resources/factorialRecursive.hello");
     }
 
-//    //TODO only detects 1 out of 3 contract violations
+    //TODO only detects 1 out of 3 contract violations
 //    @Test
 //    public void testLoopErrors() {
 //	    checkFile("src/main/resources/loopErrors.hello", 3, 13, 23);

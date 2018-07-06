@@ -472,6 +472,7 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 
 	@Override
     public Void visitWhileStat(WhileStatContext ctx) {
+	    BoolExpr initialPathCondition = currentCond();
 
         // invariants should hold from the beginning
         List<ContractContext> invariants = getContracts(ctx, "invariant");
@@ -529,7 +530,7 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
             ExpressionContext expr = contractContext.expression();
             BoolExpr z3Expr = (BoolExpr) expr(expr);
 
-            checkExpression(z3Expr, ctx, "Couldn't establish the loop invariant " + expr.getText() + " after a loop body iteration.");
+            checkExpression(z3Expr, ctx, "Couldn't establish the loop invariant " + expr.getText() + " after at the end of the loop body.");
         }
         //check the decreases.
         List<ArithExpr> decreasesExpressionsAfterwards = decreases.stream()
@@ -542,23 +543,42 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
             ArithExpr oldExpr = decreasesExpressionsInitially.get(i);
 
             BoolExpr newGreaterThanOld = c.mkGt(newExpr, oldExpr);
-            checkExpression(newGreaterThanOld, ctx, "Couldn't verify the 'decreases' contract " + decreases.get(i).getText() + ".");
+            checkExpression(newGreaterThanOld, ctx, "Couldn't verify the 'decreases' contract " + decreases.get(i).getText() + " at the end of the loop body.");
         }
+
 
         scopeStack.pop(); //after while condition
 
-        for (String inWhileVar : whileBodyScope.variables.keySet()) {
-            //after the while body, every variabele has a new identifier
-            Expr afterWhileVar = newVar(inWhileVar);
-        }
-        //assert ((invariant) && (not condition))
-        BoolExpr condition = (BoolExpr) expr(ctx.expression());
+
+        BoolExpr newPathCondition = newPathCond();
+        curScope().pathCondition = newPathCondition;
+
+        //re-establish path condition
+        solver.add(c.mkImplies(newPathCondition, initialPathCondition));
         for (ContractContext contractContext : invariants) {
             ExpressionContext expr = contractContext.expression();
             BoolExpr invariantExpr = (BoolExpr) expr(expr);
-            BoolExpr terminationExpr = c.mkAnd(invariantExpr, c.mkNot(condition));
-            solver.add(terminationExpr);
+            //loop invariant should still hold after the loop
+            solver.add(c.mkImplies(newPathCondition, invariantExpr));
         }
+        //did not take loop last time
+        BoolExpr loopCondition = (BoolExpr) expr(ctx.expression());
+        solver.add(c.mkImplies(newPathCondition, c.mkNot(loopCondition)));
+        // ----------------------
+
+
+//        for (String inWhileVar : whileBodyScope.variables.keySet()) {
+//            //after the while body, every variabele has a new identifier
+//            Expr afterWhileVar = newVar(inWhileVar);
+//        }
+//        //assert ((invariant) && (not condition))
+//        BoolExpr condition = (BoolExpr) expr(ctx.expression());
+//        for (ContractContext contractContext : invariants) {
+//            ExpressionContext expr = contractContext.expression();
+//            BoolExpr invariantExpr = (BoolExpr) expr(expr);
+//            BoolExpr terminationExpr = c.mkAnd(invariantExpr, c.mkNot(condition));
+//            solver.add(terminationExpr);
+//        }
 
 	    return null;
 	    //TODO what if our while body contains an early return?
