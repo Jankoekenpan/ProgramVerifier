@@ -90,4 +90,9 @@ public class Z3GeneratorTest {
 	public void testWhile() {
 		checkFile("src/main/resources/loop.hello");
 	}
+
+	@Test
+    public void testFactorialLoop() {
+	    checkFile("src/main/resources/factorialLoop.hello");
+    }
 }

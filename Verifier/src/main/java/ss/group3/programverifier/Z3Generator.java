@@ -460,7 +460,8 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 
 	@Override
     public Void visitWhileStat(WhileStatContext ctx) {
-        //invariants should hold from the beginning
+
+        // invariants should hold from the beginning
         List<ContractContext> invariants = getContracts(ctx, "invariant");
         for (ContractContext contractContext : invariants) {
             ExpressionContext expr = contractContext.expression();
@@ -532,7 +533,7 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
             checkExpression(newGreaterThanOld, ctx, "Couldn't verify the 'decreases' contract " + decreases.get(i).getText() + ".");
         }
 
-        scopeStack.pop();
+        scopeStack.pop(); //after while condition
 
         for (String inWhileVar : whileBodyScope.variables.keySet()) {
             //after the while body, every variabele has a new identifier

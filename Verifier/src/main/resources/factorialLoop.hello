@@ -1,6 +1,14 @@
-int factorial(int x) {
+int factorial(int x)
+# requires x > 0        #
+# ensures \result >= x  #
+{
     int result := 1;
-    while (x > 0) {
+    while (x > 0)
+    # invariant x >= 0      #
+    # invariant result >= 1 #
+    # decreases x           #
+    # decreases 0 - result  #
+    {
         result := result * x;
         x := x - 1;
     }
