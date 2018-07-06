@@ -95,4 +95,5 @@ public class Z3GeneratorTest {
     public void testFactorialLoop() {
 	    checkFile("src/main/resources/factorialLoop.hello");
     }
+    
 }
