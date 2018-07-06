@@ -5,7 +5,7 @@ Michiel Bakker (s1492454)
 
 # Installation
 
-To build the program Java 8, Maven and Z3 with Java bindings should be installed. To build, simply run `mvn install`. In order to check a language file, run `java -jar Verifier/target/Verifier-0.1.jar <path-to-file>`. Example programs can be found in `Verifier/src/main/resources`. The verifier has the following dependencies:
+To build the program you should have a working internet connection and Java 8, Maven and Z3 with Java bindings should be installed. To build, simply run `mvn install`. In order to check a language file, run `java -jar Verifier/target/Verifier-0.1.jar <path-to-file>`. Example programs can be found in `Verifier/src/main/resources`. The verifier has the following dependencies:
 
 - Z3 Java API. The Z3 API is used to generate the Z3 code. The verifier works by checking using the API, instead of generating a SMT file and using z3 after that. A limitation of this approach is that the assertions inside of a push/pop block cannot be accesed after a pop. This means that the full SMT code can't be printed after a run.
 - ANTLR. This is a parser-generator used for the parsing of the language. It gets a grammar file as input, and generates Java code that parses the input files.
@@ -43,3 +43,4 @@ The following files contain the important classes of the verifier:
 - `Verifier/src/test/java/ss/group3/programverification/Z3GeneratorTest.java`. The unit test of the verifier. Tests all features of the verifier, and checks if no wrong errors and all expected errors are found.
 
 All classes are documented with comments to explain the details. Note that the verifier does not do any explicit type checking, i.e. it assumes that the checked program is type-safe (so no 1 + false).
+All classes in the Z3-api module are taken from the Z3 project itself - which is released under the MIT licence. We did not make any modifications to those classes.
