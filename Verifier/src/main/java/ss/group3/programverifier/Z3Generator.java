@@ -571,8 +571,8 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
             newVar(oldVar);
         }
 
+        // the after-loop path condition
         BoolExpr newPathCondition = newPathCond();
-        curScope().pathCondition = newPathCondition;
         
         // handle early returns out of the while block by implying the path condition of the block
 //        solver.add(c.mkEq(newPathCondition, whileBodyScope.pathCondition));
@@ -590,20 +590,6 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
         BoolExpr loopCondition = (BoolExpr) expr(ctx.expression());
         solver.add(c.mkImplies(newPathCondition, c.mkNot(loopCondition)));
         // ----------------------
-
-
-//        for (String inWhileVar : whileBodyScope.variables.keySet()) {
-//            //after the while body, every variabele has a new identifier
-//            Expr afterWhileVar = newVar(inWhileVar);
-//        }
-//        //assert ((invariant) && (not condition))
-//        BoolExpr condition = (BoolExpr) expr(ctx.expression());
-//        for (ContractContext contractContext : invariants) {
-//            ExpressionContext expr = contractContext.expression();
-//            BoolExpr invariantExpr = (BoolExpr) expr(expr);
-//            BoolExpr terminationExpr = c.mkAnd(invariantExpr, c.mkNot(condition));
-//            solver.add(terminationExpr);
-//        }
 
 	    return null;
 	    //TODO what if our while body contains an early return?
