@@ -1,6 +1,7 @@
 package ss.group3.programverifier;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -33,9 +34,14 @@ public class Main {
 		
 		Z3Generator generator = new Z3Generator();
 		generator.visit(programTree);
-		
-		for (ProgramError error : generator.getErrors()) {
-			System.out.println(error);
-		}
+
+		List<ProgramError> errors = generator.getErrors();
+		if (errors.isEmpty()) {
+		    System.out.println("Program verified without errors");
+        } else {
+            for (ProgramError error : errors) {
+                System.out.println(error);
+            }
+        }
     }
 }
