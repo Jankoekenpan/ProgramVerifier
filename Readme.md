@@ -42,4 +42,4 @@ The following files contain the important classes of the verifier:
 - `Verifier/src/main/java/ss/group3/programverifier/Z3ExpressionParser.java`. Transforms expressions in the languge to Z3 code.
 - `Verifier/src/test/java/ss/group3/programverification/Z3GeneratorTest.java`. The unit test of the verifier. Tests all features of the verifier, and checks if no wrong errors and all expected errors are found.
 
-All classes are documented with comments to explain the details. Note that the does not do any explicit type checking, i.e. it assumes that the checked program is type-safe (so no 1 + false).
+All classes are documented with comments to explain the details. Note that the verifier does not do any explicit type checking, i.e. it assumes that the checked program is type-safe (so no 1 + false).
