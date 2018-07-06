@@ -498,8 +498,19 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
         
         whileBodyScope.initialVariables.putAll(oldScope.variables);
         scopeStack.push(whileBodyScope);
-
-        for (String oldVar : oldScope.variables.keySet()) {
+        
+        ArrayList<String> changedVars = new ArrayList<>();
+        
+        new LanguageBaseVisitor<Void>() {
+        	@Override
+        	public Void visitAssignStat(AssignStatContext ctx) {
+        		changedVars.add(getId(ctx.ID()));
+        		
+        		return super.visitAssignStat(ctx);
+        	}
+        }.visit(ctx.statement());
+        
+        for (String oldVar : changedVars) {
             //inside the while body, every variabele has a new identifier
             newVar(oldVar);
         }
@@ -556,7 +567,7 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
         scopeStack.pop(); //after while condition
         
         // 'forget' everything before the while block
-        for (String oldVar : oldScope.variables.keySet()) {
+        for (String oldVar : changedVars) {
             newVar(oldVar);
         }
 
@@ -690,12 +701,11 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		System.out.println(solver);
 		System.out.println("-- end generated SMT code --");
 		
-		if (solver.check() == Status.SATISFIABLE) {
-			System.out.println(solver.getModel());
-		} else {
-			System.out.println("Program not satisfiable");
-		}
-		
+//		if (solver.check() == Status.SATISFIABLE) {
+//			System.out.println(solver.getModel());
+//		} else {
+//			System.out.println("Program not satisfiable");
+//		}
 		
 		return null;
 	}
