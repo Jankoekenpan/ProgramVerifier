@@ -216,6 +216,7 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		return constExpr;
 	}
 	
+
 	/**
 	 * Checks if the given boolean expression always holds. Adds an error to 
 	 * the internal list if not.
@@ -225,7 +226,7 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 	 */
 	void checkExpression(BoolExpr expr, ParserRuleContext ctx, String description) {
 		solver.push();
-
+		
 		solver.add(c.mkNot(c.mkImplies(curScope().pathCondition, expr)));
 		
 		if (solver.check() == Status.SATISFIABLE) {
@@ -233,6 +234,7 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		}
 		
 //		System.out.println("debug " + ctx.getText());
+//		System.out.println(description);
 //		System.out.println(solver);
 		
 		solver.pop();
@@ -487,17 +489,19 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
         // we create a new path condition (we are in the loop now)
         ExpressionContext whileCondition = ctx.expression();
         BoolExpr z3wileCondition = (BoolExpr) expr(whileCondition);
-        solver.add(z3wileCondition);
+//        solver.add(z3wileCondition);
 
         Scope oldScope = curScope();
         Scope whileBodyScope = new Scope(oldScope);
-        whileBodyScope.pathCondition = z3wileCondition;
+        
+        whileBodyScope.pathCondition = newPathCond();
+        
         whileBodyScope.initialVariables.putAll(oldScope.variables);
         scopeStack.push(whileBodyScope);
 
         for (String oldVar : oldScope.variables.keySet()) {
             //inside the while body, every variabele has a new identifier
-            Expr newVar = newVar(oldVar);
+            newVar(oldVar);
         }
 
         List<ContractContext> decreases = getContracts(ctx, "decreases");
@@ -510,16 +514,17 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
         // their loopbody-specific name. These will be used to check the decreases contract
         whileBodyScope.initialVariables.putAll(whileBodyScope.variables);
 
-        // assert the loop condition and every invariant
-        BoolExpr newWhileCondition = (BoolExpr) expr(whileCondition);
-        solver.add(newWhileCondition);
-
         // assert every contract on the loop (don't check just yet)
         for (ContractContext contractContext : getContracts(ctx, "invariant")) {
             ExpressionContext expr = contractContext.expression();
             BoolExpr z3Expr = (BoolExpr) expr(expr);
             solver.add(z3Expr);
         }
+
+        // assert the loop condition and every invariant
+        BoolExpr newWhileCondition = (BoolExpr) expr(whileCondition);
+//        solver.add(newWhileCondition);
+        solver.add(c.mkEq(whileBodyScope.pathCondition, newWhileCondition));
 
         //now visit the body of the while loop
         StatementContext body = ctx.statement();
@@ -530,7 +535,8 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
             ExpressionContext expr = contractContext.expression();
             BoolExpr z3Expr = (BoolExpr) expr(expr);
 
-            checkExpression(z3Expr, ctx, "Couldn't establish the loop invariant " + expr.getText() + " after at the end of the loop body.");
+            String description = "Couldn't establish the loop invariant " + expr.getText() + " after at the end of the loop body.";
+			checkExpression(z3Expr, ctx, description);
         }
         //check the decreases.
         List<ArithExpr> decreasesExpressionsAfterwards = decreases.stream()
@@ -543,18 +549,26 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
             ArithExpr oldExpr = decreasesExpressionsInitially.get(i);
 
             BoolExpr newGreaterThanOld = c.mkGt(newExpr, oldExpr);
-            checkExpression(newGreaterThanOld, ctx, "Couldn't verify the 'decreases' contract " + decreases.get(i).getText() + " at the end of the loop body.");
+            String description = "Couldn't verify the 'decreases' contract " + decreases.get(i).getText() + " at the end of the loop body.";
+			checkExpression(newGreaterThanOld, ctx, description);
         }
-
-
+        
         scopeStack.pop(); //after while condition
-
+        
+        // 'forget' everything before the while block
+        for (String oldVar : oldScope.variables.keySet()) {
+            newVar(oldVar);
+        }
 
         BoolExpr newPathCondition = newPathCond();
         curScope().pathCondition = newPathCondition;
+        
+        // handle early returns out of the while block by implying the path condition of the block
+//        solver.add(c.mkEq(newPathCondition, whileBodyScope.pathCondition));
 
         //re-establish path condition
-        solver.add(c.mkImplies(newPathCondition, initialPathCondition));
+        solver.add(c.mkEq(newPathCondition, initialPathCondition));
+        
         for (ContractContext contractContext : invariants) {
             ExpressionContext expr = contractContext.expression();
             BoolExpr invariantExpr = (BoolExpr) expr(expr);
@@ -675,6 +689,13 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 		System.out.println("-- start generated SMT code --");
 		System.out.println(solver);
 		System.out.println("-- end generated SMT code --");
+		
+		if (solver.check() == Status.SATISFIABLE) {
+			System.out.println(solver.getModel());
+		} else {
+			System.out.println("Program not satisfiable");
+		}
+		
 		
 		return null;
 	}

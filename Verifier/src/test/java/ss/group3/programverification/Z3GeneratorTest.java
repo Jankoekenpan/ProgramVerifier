@@ -102,10 +102,10 @@ public class Z3GeneratorTest {
     }
 
     //TODO only detects 1 out of 3 contract violations
-//    @Test
-//    public void testLoopErrors() {
-//	    checkFile("src/main/resources/loopErrors.hello", 3, 13, 23);
-//    }
+    @Test
+    public void testLoopErrors() {
+	    checkFile("src/main/resources/loopErrors.hello", 3, 13, 23);
+    }
 
 //    //TODO does not work. do we want loop breaks in our language?
 //    @Test
