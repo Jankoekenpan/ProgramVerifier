@@ -1,0 +1,27 @@
+int i := 0;
+int n := -1;
+while (i < n)
+# invariant 0 <= i && i <= n #      //invariant fails at the beginning
+# decreases n - i #
+{
+    i := i + 1;
+}
+
+
+int j := 0;
+int k := 5;
+while (j < 10)
+# invariant 0 <= j && j <= k    #
+# decreases k - j               #
+{
+    j := j + 1;                     //violates the loop invariant after 6 iterations
+}
+
+int x := 0;
+int y := 10;
+while (x < y)
+# invariant 0 <= x && x <= y    #
+# decreases y - x               #
+{
+    y := y + 1;                     //never terminates
+}

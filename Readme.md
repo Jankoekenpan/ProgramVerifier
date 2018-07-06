@@ -5,7 +5,7 @@ Michiel Bakker (s1492454)
 
 # Installation
 
-To build the program Java 8, Maven and Z3 with Java bindings should be installed. To build, simply run `mvn install`. In order to check a language file, run `java -jar target/Verifier-0.1.jar <path-to-file>`. Example programs can be found in `Verifier/src/main/resources`. The verifier has the following dependencies:
+To build the program Java 8, Maven and Z3 with Java bindings should be installed. To build, simply run `mvn install`. In order to check a language file, run `java -jar Verifier/target/Verifier-0.1.jar <path-to-file>`. Example programs can be found in `Verifier/src/main/resources`. The verifier has the following dependencies:
 
 - Z3 Java API. The Z3 API is used to generate the Z3 code. The verifier works by checking using the API, instead of generating a SMT file and using z3 after that. A limitation of this approach is that the assertions inside of a push/pop block cannot be accesed after a pop. This means that the full SMT code can't be printed after a run.
 - ANTLR. This is a parser-generator used for the parsing of the language. It gets a grammar file as input, and generates Java code that parses the input files.
