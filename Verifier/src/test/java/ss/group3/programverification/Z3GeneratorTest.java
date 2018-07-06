@@ -101,4 +101,9 @@ public class Z3GeneratorTest {
 	    checkFile("src/main/resources/factorialRecursive.hello");
     }
 
+//    //TODO does not work. do we want loop breaks in our language?
+//    @Test
+//    public void testReturnFromWhile() {
+//	    checkFile("src/main/resources/returnFromWhile.hello");
+//    }
 }

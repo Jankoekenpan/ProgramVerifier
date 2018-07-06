@@ -1,0 +1,17 @@
+int f()
+# ensures \result == 5 #
+{
+    int x := 10;
+    while (x > 0)
+    # invariant (x >= 0) && (x <= 10)   #
+    # decreases x                       #
+    {
+        if (x == 5) {
+            return x;
+        }
+
+        x := x - 1;
+    }
+
+    return x;
+}

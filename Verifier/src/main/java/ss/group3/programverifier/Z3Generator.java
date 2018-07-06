@@ -610,7 +610,7 @@ public class Z3Generator extends LanguageBaseVisitor<Void> {
 				} else {
 					// this should probably be handled by the parser, but handling 
 					// it like this was easier in the short term
-					throw new RuntimeException("Cannot assert decreases contract on expressions");
+					throw new RuntimeException("Can only assert decreases on function parameters, not arbitrary expressions");
 				}
 			}
 		}
